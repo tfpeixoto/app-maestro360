@@ -1,0 +1,1092 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Comparativo — Gênesis</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --navy:#1a3a5c;
+  --purple:#8b5cf6;--purple-l:#ede9fe;
+  --red:#ef4444;--red-l:#fee2e2;
+  --green:#22c55e;--green-l:#dcfce7;
+  --amber:#f59e0b;--amber-l:#fef3c7;
+  --text:#1e293b;--muted:#64748b;--border:#e2e8f0;
+  --bg:#f1f5f9;--card:#ffffff;
+  --shadow:0 1px 3px rgba(0,0,0,.07),0 4px 14px rgba(0,0,0,.05);
+  --radius:12px;
+}
+html{font-size:14px}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);line-height:1.5}
+
+/* PAGE */
+.page{max-width:1100px;margin:0 auto;padding:20px 20px 80px}
+h1{font-size:20px;font-weight:800;color:var(--navy);margin-bottom:2px}
+.subtitle{font-size:12px;color:var(--muted);margin-bottom:14px}
+
+/* BANNER */
+.banner{border-radius:var(--radius);padding:12px 16px;margin-bottom:14px;display:flex;align-items:center;gap:10px;font-size:13px}
+.banner.loaded{background:linear-gradient(135deg,#1a3a5c,#2563a8);color:white}
+.banner.empty{background:var(--amber-l);color:#92400e;border:1px solid #fde68a}
+.bn-icon{font-size:20px;flex-shrink:0}
+.bn-title{font-weight:700;margin-bottom:1px}
+.bn-params{font-size:12px;opacity:.8}
+.bn-params a{color:inherit;font-weight:700}
+
+/* CONTROLS */
+.ctrl-card{background:var(--card);border-radius:var(--radius);border:1px solid var(--border);padding:14px 18px;margin-bottom:14px;box-shadow:var(--shadow)}
+.ctrl-top{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--muted);margin-bottom:10px}
+.ctrl-flex{display:flex;gap:20px;flex-wrap:wrap}
+.ctrl-item{display:flex;align-items:center;gap:8px;flex:1;min-width:180px}
+.ctrl-lbl{font-size:12px;color:var(--muted);white-space:nowrap;width:120px;flex-shrink:0}
+.ctrl-sl{flex:1;height:4px;border-radius:2px;cursor:pointer;appearance:none;-webkit-appearance:none;outline:none;border:none;background:var(--border)}
+.ctrl-sl::-webkit-slider-thumb{appearance:none;width:16px;height:16px;border-radius:50%;background:var(--navy);border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.2);cursor:pointer}
+.ctrl-num{width:50px;padding:4px 6px;border:1.5px solid var(--border);border-radius:6px;font-size:12px;font-weight:700;color:var(--text);text-align:center;background:#fafafa}
+.ctrl-unit{font-size:11px;color:var(--muted);width:30px}
+
+/* STRATEGY CARDS */
+.strategies{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:14px}
+@media(max-width:760px){.strategies{grid-template-columns:1fr}}
+.sc{border-radius:var(--radius);border:2px solid var(--border);background:var(--card);overflow:hidden;box-shadow:var(--shadow)}
+.sc.winner{border-width:3px}
+.sc.c-purple{border-color:var(--purple)}
+.sc.c-red{border-color:var(--red)}
+.sc.c-green{border-color:var(--green)}
+.sc-stripe{height:4px}
+.sc-stripe.c-purple{background:var(--purple)}
+.sc-stripe.c-red{background:var(--red)}
+.sc-stripe.c-green{background:var(--green)}
+.sc-head{padding:12px 14px 8px;display:flex;align-items:center;justify-content:space-between}
+.sc-name{font-size:15px;font-weight:800}
+.sc-icon{font-size:20px}
+.sc-badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;margin-bottom:8px;background:var(--amber);color:#fff}
+.sc-body{padding:0 14px 14px}
+.sc-total{font-size:26px;font-weight:800;line-height:1}
+.sc-total-lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin:3px 0 10px}
+.sc-row{display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-top:1px solid #f1f5f9;font-size:12px}
+.sc-rl{color:var(--muted)}
+.sc-rv{font-weight:700}
+.sc-rv.good{color:#15803d}
+.sc-rv.bad{color:#b91c1c}
+.sc-rv.purple{color:var(--purple)}
+.sc-verdict{padding:9px 14px;font-size:11px;font-weight:600;border-top:1px solid var(--border)}
+.sc-verdict.c-purple{background:var(--purple-l);color:#5b21b6}
+.sc-verdict.c-red{background:var(--red-l);color:#991b1b}
+.sc-verdict.c-green{background:var(--green-l);color:#15803d}
+
+/* MODAL EDITAR SIMULAÇÃO */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:300;align-items:center;justify-content:center}
+.modal-bg.open{display:flex}
+.modal-box{background:white;border-radius:16px;padding:24px;width:90%;max-width:480px;box-shadow:0 20px 60px rgba(0,0,0,.2);max-height:90vh;overflow-y:auto}
+.modal-title{font-size:18px;font-weight:800;color:var(--navy);margin-bottom:16px;display:flex;align-items:center;justify-content:space-between}
+.modal-close{background:none;border:none;font-size:22px;cursor:pointer;color:var(--muted);line-height:1}
+.med-row{margin-bottom:14px}
+.med-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:6px}
+.med-tog{display:flex;gap:6px;flex-wrap:wrap}
+.med-btn{padding:6px 14px;border:1.5px solid var(--border);border-radius:8px;background:#fafafa;font-size:13px;font-weight:600;color:var(--muted);cursor:pointer;transition:.15s}
+.med-btn:hover{border-color:var(--navy);color:var(--navy)}
+.med-btn.on{border-color:var(--purple);background:var(--purple);color:white}
+.med-sl-row{display:flex;align-items:center;gap:10px}
+.med-sl{flex:1;height:4px;border-radius:2px;appearance:none;-webkit-appearance:none;outline:none;border:none;cursor:pointer;background:var(--border)}
+.med-sl::-webkit-slider-thumb{appearance:none;width:16px;height:16px;border-radius:50%;background:var(--purple);border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.2);cursor:pointer}
+.med-val{width:52px;text-align:center;padding:4px 6px;border:1.5px solid var(--border);border-radius:6px;font-size:13px;font-weight:700;color:var(--text);background:#fafafa}
+.med-actions{display:flex;gap:8px;margin-top:18px;justify-content:flex-end}
+.med-btn-apply{padding:10px 20px;border:none;border-radius:8px;background:var(--purple);color:white;font-size:13px;font-weight:700;cursor:pointer}
+.med-btn-apply:hover{background:#7c3aed}
+.med-btn-cancel{padding:10px 20px;border:1.5px solid var(--border);border-radius:8px;background:white;color:var(--muted);font-size:13px;font-weight:600;cursor:pointer}
+
+/* ECONOMY BAR */
+.eco-bar{background:linear-gradient(135deg,#1a3a5c,#2563a8);border-radius:var(--radius);padding:14px 18px;margin-bottom:14px;display:flex;flex-wrap:wrap;gap:6px 24px;align-items:center}
+.eco-item{display:flex;flex-direction:column}
+.eco-lbl{font-size:10px;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:.5px}
+.eco-val{font-size:14px;font-weight:800;color:white}
+.eco-val.good{color:#86efac}
+.eco-val.accent{color:#fcd34d}
+
+/* VIEW TABS */
+.view-tabs{display:flex;gap:0;background:var(--bg);border-radius:10px;padding:4px;margin-bottom:14px;border:1px solid var(--border)}
+.vtab{flex:1;padding:9px 16px;border:none;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;background:transparent;color:var(--muted);transition:all .18s;display:flex;align-items:center;justify-content:center;gap:6px}
+.vtab.active{background:white;color:var(--navy);font-weight:800;box-shadow:0 1px 4px rgba(0,0,0,.12)}
+
+/* SIMPLE VIEW */
+.simple-view{margin-bottom:14px}
+.sv-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:14px}
+@media(max-width:700px){.sv-grid{grid-template-columns:1fr}}
+.sv-card{background:var(--card);border-radius:var(--radius);border:2px solid var(--border);box-shadow:var(--shadow);overflow:hidden}
+.sv-card.c-purple{border-color:var(--purple)}
+.sv-card.c-red{border-color:var(--red)}
+.sv-card.c-green{border-color:var(--green)}
+.sv-header{padding:14px 16px 10px;display:flex;align-items:center;gap:10px}
+.sv-icon{font-size:26px;line-height:1}
+.sv-name{font-size:15px;font-weight:800;color:var(--navy)}
+.sv-tag{font-size:10px;font-weight:700;padding:2px 8px;border-radius:8px;margin-top:2px;display:inline-block}
+.sv-tag.c-purple{background:var(--purple-l);color:#5b21b6}
+.sv-tag.c-red{background:var(--red-l);color:#991b1b}
+.sv-tag.c-green{background:var(--green-l);color:#15803d}
+.sv-timeline{padding:0 16px 14px;display:flex;flex-direction:column;gap:0}
+.sv-phase{position:relative;padding-left:28px;padding-bottom:18px}
+.sv-phase:last-child{padding-bottom:0}
+.sv-phase::before{content:'';position:absolute;left:8px;top:20px;bottom:0;width:2px;background:var(--border)}
+.sv-phase:last-child::before{display:none}
+.sv-dot{position:absolute;left:0;top:4px;width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;color:white;flex-shrink:0}
+.sv-dot.inicio{background:#94a3b8}
+.sv-dot.contempl{background:var(--amber)}
+.sv-dot.fim{background:#22c55e}
+.sv-phase-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);margin-bottom:4px}
+.sv-phase-val{font-size:20px;font-weight:900;color:var(--navy);line-height:1}
+.sv-phase-sub{font-size:11px;color:var(--muted);margin-top:2px}
+.sv-compare{background:var(--card);border-radius:var(--radius);border:1px solid var(--border);box-shadow:var(--shadow);padding:16px 20px;margin-bottom:14px}
+.sv-compare-title{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:12px}
+.sv-comp-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--bg);font-size:13px}
+.sv-comp-row:last-child{border-bottom:none}
+.sv-comp-label{color:var(--muted);font-weight:600}
+.sv-comp-vals{display:flex;gap:14px}
+.sv-cv{font-weight:800;min-width:80px;text-align:right}
+.sv-cv.purple{color:var(--purple)}
+.sv-cv.red{color:var(--red)}
+.sv-cv.green{color:#15803d}
+
+/* CHART */
+.chart-card{background:var(--card);border-radius:var(--radius);border:1px solid var(--border);box-shadow:0 2px 12px rgba(0,0,0,.08),0 1px 3px rgba(0,0,0,.06);overflow:hidden;margin-bottom:14px}
+.chart-head{padding:16px 20px;display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:8px;border-bottom:1px solid var(--border);background:linear-gradient(135deg,#fafbff 0%,#f8fafc 100%)}
+.chart-title{font-size:14px;font-weight:800;color:var(--navy)}
+.chart-sub{font-size:11px;color:var(--muted);margin-top:2px}
+.legend{display:flex;flex-wrap:wrap;gap:6px}
+.leg{display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:20px;font-size:11px;font-weight:700;border:1.5px solid var(--border);background:#fafafa;cursor:pointer;user-select:none;transition:all .18s;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.leg:hover{border-color:#94a3b8;transform:translateY(-1px);box-shadow:0 3px 8px rgba(0,0,0,.1)}
+.leg.off{opacity:.35;text-decoration:line-through;transform:none}
+.leg-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+canvas#mainChart{display:block;width:100%;height:400px;cursor:crosshair;background:linear-gradient(180deg,#fafbff 0%,#ffffff 100%)}
+
+/* SCRUBBER */
+.scr-wrap{padding:12px 18px 14px;border-top:1px solid var(--border);background:#fafbfc}
+.scr-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:6px}
+.scr-month{font-size:14px;font-weight:800;color:var(--navy)}
+.scr-badge{display:inline-block;background:var(--navy);color:white;padding:2px 10px;border-radius:12px;font-size:11px;font-weight:600;margin-left:8px;vertical-align:middle}
+.scr-hint{font-size:11px;color:var(--muted);font-style:italic}
+input#scrubber{width:100%;height:6px;border-radius:3px;appearance:none;-webkit-appearance:none;outline:none;border:none;cursor:pointer;background:linear-gradient(to right,var(--purple) var(--fill,0%),var(--border) var(--fill,0%))}
+input#scrubber::-webkit-slider-thumb{appearance:none;width:20px;height:20px;border-radius:50%;background:white;border:3px solid var(--purple);box-shadow:0 2px 8px rgba(139,92,246,.4);cursor:pointer;transition:transform .1s}
+input#scrubber::-webkit-slider-thumb:hover{transform:scale(1.2)}
+input#scrubber::-moz-range-thumb{width:20px;height:20px;border-radius:50%;background:white;border:3px solid var(--purple);cursor:pointer}
+.yr-ruler{position:relative;height:18px;margin-top:6px}
+.yr-tick{position:absolute;font-size:10px;color:var(--muted);transform:translateX(-50%)}
+.yr-tick:first-child{transform:none}.yr-tick:last-child{transform:translateX(-100%)}
+
+/* STATUS CARDS AO VIVO */
+.pat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;padding:14px 16px;border-top:1px solid var(--border)}
+@media(max-width:600px){.pat-grid{grid-template-columns:1fr}}
+.pat-card{border-radius:10px;padding:12px 14px;border:1.5px solid var(--border);transition:box-shadow .2s}
+.pat-card.c-purple{border-left:4px solid var(--purple);background:linear-gradient(135deg,#faf5ff,#fff)}
+.pat-card.c-red{border-left:4px solid var(--red);background:linear-gradient(135deg,#fff5f5,#fff)}
+.pat-card.c-green{border-left:4px solid var(--green);background:linear-gradient(135deg,#f0fdf4,#fff)}
+.pc-name{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin-bottom:4px}
+.pc-val{font-size:22px;font-weight:800;line-height:1.1;margin-bottom:6px}
+.pc-val.pos{color:#15803d}.pc-val.neg{color:#b91c1c}.pc-val.neu{color:var(--navy)}
+.pc-status{display:inline-flex;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;margin-bottom:8px}
+.pc-status.ok{background:#dcfce7;color:#15803d}
+.pc-status.wait{background:#e0e7ff;color:#4338ca}
+.pc-status.debt{background:#fee2e2;color:#991b1b}
+.pc-row{display:flex;justify-content:space-between;font-size:11px;padding:2px 0;border-top:1px solid rgba(0,0,0,.05)}
+.pc-rl{color:var(--muted)}.pc-rv{font-weight:700;color:var(--text)}
+
+/* EVENTS ROW */
+.events{display:flex;flex-wrap:wrap;gap:8px;padding:12px 16px;border-top:1px solid var(--border)}
+.ev-chip{display:inline-flex;flex-direction:column;padding:6px 12px;border-radius:8px;border:1.5px solid var(--border);background:#fafafa;min-width:90px;cursor:pointer;transition:.15s}
+.ev-chip:hover{border-color:var(--navy);background:#f0f4ff}
+.ev-chip.active{border-color:var(--purple);background:var(--purple-l)}
+.ev-chip.dim{opacity:.4;pointer-events:none}
+.ev-et{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted)}
+.ev-ed{font-size:12px;font-weight:700;color:var(--navy)}
+.ev-es{font-size:10px;color:var(--muted)}
+</style>
+</head>
+<body>
+<script>if (!localStorage.getItem('crm_auth')) window.location.href = 'index.html';</script>
+
+<div class="page">
+
+  <h1>Comparativo de Estratégias</h1>
+  <p class="subtitle">Consórcio · Financiamento · Investimento direto — baseado na sua simulação</p>
+
+  <!-- MODAL EDITAR SIMULAÇÃO -->
+  <div class="modal-bg" id="editModal">
+    <div class="modal-box">
+      <div class="modal-title">
+        Editar Parâmetros
+        <button class="modal-close" onclick="closeEditModal()">×</button>
+      </div>
+
+      <div class="med-row">
+        <div class="med-label">Crédito desejado</div>
+        <div class="med-sl-row">
+          <input type="range" class="med-sl" id="med_credito" min="100000" max="2000000" step="50000" value="600000"
+            oninput="el('medv_credito').value=fR(+this.value)">
+          <input type="text" class="med-val" id="medv_credito" value="R$ 600k" style="width:80px" readonly>
+        </div>
+      </div>
+
+      <div class="med-row">
+        <div class="med-label">% da Parcela</div>
+        <div class="med-tog" id="med_perc">
+          <button class="med-btn" onclick="medPerc(0.5,this)">50% — Reduzida</button>
+          <button class="med-btn on" onclick="medPerc(0.7,this)">70% — Equilibrada</button>
+          <button class="med-btn" onclick="medPerc(1.0,this)">100% — Cheia</button>
+        </div>
+      </div>
+
+      <div class="med-row">
+        <div class="med-label">Mês de Contemplação esperado</div>
+        <div class="med-sl-row">
+          <input type="range" class="med-sl" id="med_mes" min="1" max="120" step="1" value="36"
+            oninput="el('medv_mes').value='Mês '+this.value">
+          <input type="text" class="med-val" id="medv_mes" value="Mês 36" readonly>
+        </div>
+      </div>
+
+      <div class="med-row">
+        <div class="med-label">Lance Embutido (%)</div>
+        <div class="med-sl-row">
+          <input type="range" class="med-sl" id="med_emb" min="0" max="30" step="1" value="30"
+            oninput="el('medv_emb').value=this.value+'%'">
+          <input type="text" class="med-val" id="medv_emb" value="30%" readonly>
+        </div>
+      </div>
+
+      <div class="med-row">
+        <div class="med-label">Grupo</div>
+        <div class="med-tog" id="med_grupo">
+          <button class="med-btn on" onclick="medGrupo('4003',this)">Grupo 4003</button>
+          <button class="med-btn" onclick="medGrupo('4004',this)">Grupo 4004</button>
+        </div>
+      </div>
+
+      <div class="med-actions">
+        <button class="med-btn-cancel" onclick="closeEditModal()">Cancelar</button>
+        <button class="med-btn-apply" onclick="applyEditModal()">Aplicar Simulação ✓</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- BANNER: preenchido via JS -->
+  <div id="simBanner"></div>
+
+  <!-- CONTROLES DE MERCADO -->
+  <div class="ctrl-card">
+    <div class="ctrl-top">Taxas do Cenário</div>
+    <div class="ctrl-flex">
+      <div class="ctrl-item">
+        <span class="ctrl-lbl">Financiamento a.a.</span>
+        <input type="range" class="ctrl-sl" id="sl_fin" min="6" max="22" step="0.5" value="11"
+          oninput="syncN('n_fin',this.value,1);MKT.taxaFin=+this.value;recalc()">
+        <input type="number" class="ctrl-num" id="n_fin" value="11" step="0.5"
+          oninput="syncS('sl_fin',this.value);MKT.taxaFin=+this.value;recalc()">
+        <span class="ctrl-unit">% a.a.</span>
+      </div>
+      <div class="ctrl-item">
+        <span class="ctrl-lbl">Entrada (%)</span>
+        <input type="range" class="ctrl-sl" id="sl_ent" min="0" max="50" step="5" value="20"
+          oninput="syncN('n_ent',this.value,0);MKT.entrada=+this.value;recalc()">
+        <input type="number" class="ctrl-num" id="n_ent" value="20" step="5"
+          oninput="syncS('sl_ent',this.value);MKT.entrada=+this.value;recalc()">
+        <span class="ctrl-unit">%</span>
+      </div>
+      <div class="ctrl-item">
+        <span class="ctrl-lbl">CDB / Tesouro a.a.</span>
+        <input type="range" class="ctrl-sl" id="sl_cdb" min="5" max="18" step="0.5" value="13"
+          oninput="syncN('n_cdb',this.value,1);MKT.taxaCDB=+this.value;recalc()">
+        <input type="number" class="ctrl-num" id="n_cdb" value="13" step="0.5"
+          oninput="syncS('sl_cdb',this.value);MKT.taxaCDB=+this.value;recalc()">
+        <span class="ctrl-unit">% a.a.</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- CARDS: preenchidos via JS -->
+  <div class="strategies" id="strategies"></div>
+
+  <!-- BARRA DE ECONOMIA: preenchida via JS -->
+  <div class="eco-bar" id="ecoBar"></div>
+
+  <!-- VIEW TABS -->
+  <div class="view-tabs">
+    <button class="vtab active" id="vtab-simples" onclick="switchView('simples')">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M2 11h12v2H2zm0-4h12v2H2zm0-4h12v2H2z"/></svg>
+      Visão Simples
+    </button>
+    <button class="vtab" id="vtab-avancada" onclick="switchView('avancada')">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M0 0h1v15h15v1H0zm14.5 2l1 1-5 5-3-3-4 4-.7-.7 4.7-4.7 3 3z"/></svg>
+      Visão Avançada
+    </button>
+  </div>
+
+  <!-- VISÃO SIMPLES -->
+  <div id="view-simples">
+    <div class="sv-grid" id="svCards"></div>
+    <div class="sv-compare" id="svCompare"></div>
+  </div>
+
+  <!-- VISÃO AVANÇADA (gráfico) -->
+  <div id="view-avancada" style="display:none">
+    <div class="chart-card">
+      <div class="chart-head">
+        <div>
+          <div class="chart-title">Evolução Patrimonial — 10 Anos</div>
+          <div class="chart-sub">Patrimônio líquido construído por cada estratégia ao longo do tempo</div>
+        </div>
+        <div class="legend" id="legend"></div>
+      </div>
+      <canvas id="mainChart"></canvas>
+
+      <!-- SCRUBBER -->
+      <div class="scr-wrap">
+        <div class="scr-hdr">
+          <div>
+            <span class="scr-month" id="scrMonth">Hoje · Abril 2026</span>
+            <span class="scr-badge" id="scrBadge">Mês 0</span>
+          </div>
+          <span class="scr-hint">← Arraste para viajar no tempo →</span>
+        </div>
+        <input type="range" id="scrubber" min="0" max="120" value="0" step="1">
+        <div class="yr-ruler" id="yrRuler"></div>
+      </div>
+
+      <!-- STATUS AO VIVO -->
+      <div class="pat-grid" id="patGrid"></div>
+
+      <!-- MARCOS -->
+      <div class="events" id="evRow"></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ── CONSTANTES ───────────────────────────────────
+const MESES_C = 186, TAXA_ADM = 0.24, FUNDO = 0.02, N = 121;
+
+// ── ESTADO ───────────────────────────────────────
+let SIM = null; // dados carregados do simulador
+const MKT = { taxaFin: 11, entrada: 20, taxaCDB: 13 };
+const VIS = { consorcio: true, financiamento: true, investimento: true };
+
+// ── UTILS ────────────────────────────────────────
+function el(id) { return document.getElementById(id); }
+
+function syncN(id, v, d) { el(id).value = parseFloat(v).toFixed(d); }
+function syncS(id, v) { el(id).value = v; }
+
+function fR(v) {
+  const a = Math.abs(v), s = v < 0 ? '−' : '';
+  if (a >= 1e6) return s + 'R$ ' + (a/1e6).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}) + 'M';
+  if (a >= 1e3) return s + 'R$ ' + (a/1e3).toLocaleString('pt-BR',{minimumFractionDigits:0,maximumFractionDigits:0}) + 'k';
+  return s + 'R$ ' + Math.round(a).toLocaleString('pt-BR');
+}
+function fRf(v) { return 'R$ ' + Math.round(Math.abs(v)).toLocaleString('pt-BR'); }
+function niceStep(r) {
+  const m = Math.pow(10, Math.floor(Math.log10(Math.abs(r) || 1)));
+  const n = r / m;
+  return n < 1.5 ? m : n < 3.5 ? 2*m : n < 7.5 ? 5*m : 10*m;
+}
+
+// ── CARREGAR SIMULAÇÃO ───────────────────────────
+function loadSim() {
+  const raw = localStorage.getItem('crm_sim_result');
+  if (!raw) return null;
+  try { return JSON.parse(raw); } catch(e) { return null; }
+}
+
+function getParams() {
+  const s = SIM || {};
+  return {
+    credito:       s.credito       || 600000,
+    perc:          s.perc          || 0.7,
+    mesContempl:   s.mesContempl   || 36,
+    embPerc:       s.embPerc       || 30,
+    lancePropPerc: s.lancePropPerc || 27.3,
+    grupo:         s.grupo         || '4003',
+  };
+}
+
+// ── CÁLCULOS ─────────────────────────────────────
+function calcConsorcio(p) {
+  const parcela   = p.credito * (TAXA_ADM + FUNDO) / MESES_C * p.perc;
+  const lEmb      = p.credito * p.embPerc / 100;
+  const lProprio  = p.credito * p.lancePropPerc / 100;
+  const lTotal    = lEmb + lProprio;
+  const credLivre = p.credito - lEmb;
+  const sIni      = p.credito * (1 + TAXA_ADM + FUNDO);
+  const pagosAv   = p.mesContempl * parcela;
+  const sPos      = Math.max(0, sIni - pagosAv - lTotal);
+  const novaP     = sPos > 0 ? sPos / (MESES_C - p.mesContempl) : 0;
+  const totalPago = pagosAv + lTotal + (MESES_C - p.mesContempl) * novaP;
+  const mult      = lTotal > 0 ? (credLivre / lTotal).toFixed(2) : '—';
+
+  const rI = Math.pow(1.05, 1/12) - 1;
+  const pat = new Float64Array(N);
+  for (let t = 0; t < N; t++) {
+    const imovVal = p.credito * Math.pow(1 + rI, t);
+    if (t < p.mesContempl) {
+      pat[t] = -(t * parcela);
+    } else {
+      const debtRem = Math.max(0, sPos - (t - p.mesContempl) * novaP);
+      pat[t] = imovVal - debtRem;
+    }
+  }
+  return { parcela, lEmb, lProprio, lTotal, credLivre, totalPago, novaP, sPos, mult, pat, mesContempl: p.mesContempl };
+}
+
+function calcFinanciamento(p) {
+  const rM   = Math.pow(1 + MKT.taxaFin / 100, 1/12) - 1;
+  const ent  = p.credito * MKT.entrada / 100;
+  const fin  = p.credito - ent;
+  const PF   = 360;
+  const pmt  = rM > 0 ? fin * rM * Math.pow(1+rM,PF) / (Math.pow(1+rM,PF) - 1) : fin / PF;
+  const totalPago = ent + PF * pmt;
+  const juros     = totalPago - p.credito;
+
+  const rI = Math.pow(1.05, 1/12) - 1;
+  const pat = new Float64Array(N);
+  let debt = fin;
+  for (let t = 0; t < N; t++) {
+    const imovVal = p.credito * Math.pow(1 + rI, t);
+    pat[t] = imovVal - Math.max(0, debt);
+    if (t < PF) {
+      debt = Math.max(0, debt * (1 + rM) - pmt);
+    }
+  }
+  return { ent, pmt, totalPago, juros, fin, PF, pat };
+}
+
+function calcInvestimento(p) {
+  const rC   = Math.pow(1 + MKT.taxaCDB / 100, 1/12) - 1;
+  const aport = p.credito * (TAXA_ADM + FUNDO) / MESES_C * p.perc;
+
+  const pat = new Float64Array(N);
+  let mCompra = -1;
+  for (let t = 0; t < N; t++) {
+    const saldo = rC > 0 ? aport * (Math.pow(1+rC, t) - 1) / rC : aport * t;
+    pat[t] = saldo;
+    if (mCompra < 0 && saldo >= p.credito) mCompra = t;
+  }
+  const saldo10   = pat[120];
+  const rendimento = saldo10 - aport * 120;
+  return { aport, saldo10, rendimento, mCompra, pat };
+}
+
+// ── RENDER CARDS ─────────────────────────────────
+function renderCards(c, f, inv) {
+  el('strategies').innerHTML = cardConsorcio(c) + cardFinanciamento(f, c) + cardInvestimento(inv);
+}
+
+function cardConsorcio(c) {
+  return `<div class="sc c-purple winner" style="cursor:pointer" onclick="openEditModal()" title="Clique para editar os parâmetros da simulação">
+    <div class="sc-stripe c-purple"></div>
+    <div class="sc-head"><span class="sc-name" style="color:var(--purple)">Consórcio</span><span class="sc-icon">🏆</span></div>
+    <div class="sc-body">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+        <div class="sc-badge" style="margin:0">Menor custo total</div>
+        <span style="font-size:11px;color:var(--purple);font-weight:600">✏️ Editar parâmetros →</span>
+      </div>
+      <div class="sc-total" style="color:var(--purple)">${fR(c.totalPago)}</div>
+      <div class="sc-total-lbl">Total pago estimado</div>
+      <div class="sc-row"><span class="sc-rl">Parcela inicial/mês</span><span class="sc-rv">${fRf(c.parcela)}</span></div>
+      <div class="sc-row"><span class="sc-rl">Lance total</span><span class="sc-rv">${fRf(c.lTotal)}</span></div>
+      <div class="sc-row"><span class="sc-rl">Crédito livre</span><span class="sc-rv good">${fR(c.credLivre)}</span></div>
+      <div class="sc-row"><span class="sc-rl">Parcela após contempl.</span><span class="sc-rv">${c.novaP > 0 ? fRf(c.novaP)+'/mês' : 'Quitado'}</span></div>
+      <div class="sc-row"><span class="sc-rl">Contemplação esperada</span><span class="sc-rv purple">Mês ${c.mesContempl}</span></div>
+      <div class="sc-row"><span class="sc-rl">Multiplicador</span><span class="sc-rv purple">${c.mult}×</span></div>
+    </div>
+    <div class="sc-verdict c-purple">✓ Menor custo · Crédito livre para usar como quiser</div>
+  </div>`;
+}
+
+function cardFinanciamento(f, c) {
+  const extra = f.totalPago - c.totalPago;
+  return `<div class="sc c-red">
+    <div class="sc-stripe c-red"></div>
+    <div class="sc-head"><span class="sc-name" style="color:var(--red)">Financiamento</span><span class="sc-icon">🏦</span></div>
+    <div class="sc-body">
+      <div class="sc-total" style="color:var(--red);margin-top:24px">${fR(f.totalPago)}</div>
+      <div class="sc-total-lbl">Total pago (entrada + parcelas)</div>
+      <div class="sc-row"><span class="sc-rl">Entrada necessária</span><span class="sc-rv">${fRf(f.ent)}</span></div>
+      <div class="sc-row"><span class="sc-rl">Parcela mensal</span><span class="sc-rv">${fRf(f.pmt)}/mês</span></div>
+      <div class="sc-row"><span class="sc-rl">Prazo</span><span class="sc-rv">360 meses (30 anos)</span></div>
+      <div class="sc-row"><span class="sc-rl">Juros ao banco</span><span class="sc-rv bad">${fR(f.juros)}</span></div>
+      <div class="sc-row"><span class="sc-rl">Custo extra vs consórcio</span><span class="sc-rv bad">+ ${fR(extra)}</span></div>
+    </div>
+    <div class="sc-verdict c-red">⚡ Imóvel imediato · Mas juros elevados no longo prazo</div>
+  </div>`;
+}
+
+function cardInvestimento(inv) {
+  const tempo = inv.mCompra > 0
+    ? `Mês ${inv.mCompra} (~${(inv.mCompra/12).toFixed(1)} anos)`
+    : '> 10 anos';
+  return `<div class="sc c-green">
+    <div class="sc-stripe c-green"></div>
+    <div class="sc-head"><span class="sc-name" style="color:var(--green)">CDB / Investimento</span><span class="sc-icon">📈</span></div>
+    <div class="sc-body">
+      <div class="sc-total" style="color:var(--green);margin-top:24px">${fR(inv.saldo10)}</div>
+      <div class="sc-total-lbl">Saldo acumulado em 10 anos</div>
+      <div class="sc-row"><span class="sc-rl">Aporte mensal</span><span class="sc-rv">${fRf(inv.aport)}/mês</span></div>
+      <div class="sc-row"><span class="sc-rl">Total investido (10 anos)</span><span class="sc-rv">${fRf(inv.aport * 120)}</span></div>
+      <div class="sc-row"><span class="sc-rl">Rendimento gerado</span><span class="sc-rv good">${fR(inv.rendimento)}</span></div>
+      <div class="sc-row"><span class="sc-rl">Atinge valor do imóvel</span><span class="sc-rv">${tempo}</span></div>
+      <div class="sc-row"><span class="sc-rl">Taxa usada</span><span class="sc-rv">${MKT.taxaCDB}% a.a.</span></div>
+    </div>
+    <div class="sc-verdict c-green">📊 Sem imóvel imediato · Acumula patrimônio com juros compostos</div>
+  </div>`;
+}
+
+function renderEcoBar(c, f, inv) {
+  const eco = f.totalPago - c.totalPago;
+  const ecoPerc = ((eco / f.totalPago) * 100).toFixed(0);
+  el('ecoBar').innerHTML = `
+    <div class="eco-item"><span class="eco-lbl">Crédito</span><span class="eco-val">${fR(getParams().credito)}</span></div>
+    <div class="eco-item"><span class="eco-lbl">Parcela consórcio</span><span class="eco-val">${fRf(c.parcela)}/mês</span></div>
+    <div class="eco-item"><span class="eco-lbl">Economia vs financiamento</span><span class="eco-val good">↓ ${fR(eco)} (${ecoPerc}% menos)</span></div>
+    <div class="eco-item"><span class="eco-lbl">CDB em 10 anos</span><span class="eco-val accent">${fR(inv.saldo10)}</span></div>
+  `;
+}
+
+// ── VIEW SWITCHER ─────────────────────────────────
+let CUR_VIEW = 'simples';
+
+function switchView(v) {
+  CUR_VIEW = v;
+  el('view-simples').style.display  = v === 'simples'  ? '' : 'none';
+  el('view-avancada').style.display = v === 'avancada' ? '' : 'none';
+  el('vtab-simples').classList.toggle('active',  v === 'simples');
+  el('vtab-avancada').classList.toggle('active', v === 'avancada');
+  if (v === 'avancada' && CACHE) { buildLegend(); buildYearRuler(); animChart(CACHE, 500); updatePatCards(CACHE, CUR); renderEvents(CACHE.c); }
+  if (v === 'simples'  && CACHE) renderSimpleView(CACHE);
+}
+
+function renderSimpleView(d) {
+  const c   = d.c;
+  const f   = d.f;
+  const inv = d.inv;
+
+  /* ─── Cards por estratégia ─── */
+  const mkCard = (cls, icon, name, tag, phases, verdict) => `
+    <div class="sv-card ${cls}">
+      <div class="sv-header">
+        <div class="sv-icon">${icon}</div>
+        <div>
+          <div class="sv-name">${name}</div>
+          <span class="sv-tag ${cls}">${tag}</span>
+        </div>
+      </div>
+      <div class="sv-timeline">
+        ${phases.map((p,i) => `
+          <div class="sv-phase">
+            <div class="sv-dot ${i===0?'inicio':i===1?'contempl':'fim'}">${i+1}</div>
+            <div class="sv-phase-label">${p.label}</div>
+            <div class="sv-phase-val">${p.val}</div>
+            <div class="sv-phase-sub">${p.sub}</div>
+          </div>`).join('')}
+      </div>
+      <div style="padding:10px 16px 14px;border-top:1px solid var(--border);font-size:12px;color:var(--muted)">${verdict}</div>
+    </div>`;
+
+  const svCards = [
+    mkCard('c-purple','🔑','Consórcio','Menor custo', [
+      { label:'Hoje — Entrada', val: fRf(c.lTotal), sub:`Lance embutido + próprio · Parcela: ${fRf(c.parcela)}/mês` },
+      { label:`Mês ${c.mesContempl} — Contemplação`, val: fR(c.credLivre), sub:`Crédito livre disponível para uso` },
+      { label:'Mês 120 — Fim', val: fRf(c.totalPago), sub:`Total pago estimado (parcelas + lance)` },
+    ], `Multiplicador ${c.mult}× · Economia de ${fR(f.totalPago - c.totalPago)} vs financiamento`),
+
+    mkCard('c-red','🏦','Financiamento','Imóvel imediato', [
+      { label:'Hoje — Entrada', val: fRf(f.ent), sub:`${MKT.entrada}% do valor do imóvel` },
+      { label:'Mês 60 — 5 anos', val: fRf(d.f.pat[60] >= 0 ? d.f.pat[60] : 0), sub:`Patrimônio líquido acumulado` },
+      { label:'Mês 120 — Fim', val: fRf(f.totalPago), sub:`Total pago incluindo juros` },
+    ], `Juros ao banco: ${fR(f.juros)} · Custo extra vs consórcio: +${fR(f.totalPago - c.totalPago)}`),
+
+    mkCard('c-green','📈','CDB / Investimento','Sem imóvel imediato', [
+      { label:'Hoje — Início', val: fRf(inv.aport) + '/mês', sub:`Aporte mensal investido` },
+      { label:`${inv.mCompra > 0 ? 'Mês '+inv.mCompra : '>10 anos'} — Atinge meta`, val: inv.mCompra > 0 ? fR(d.c.credito) : '—', sub:`Acumula valor do imóvel` },
+      { label:'Mês 120 — Fim', val: fR(inv.saldo10), sub:`Saldo total + rendimentos` },
+    ], `Rendimento: ${fR(inv.rendimento)} · Taxa: ${MKT.taxaCDB}% a.a.`),
+  ];
+
+  el('svCards').innerHTML = svCards.join('');
+
+  /* ─── Tabela comparativa ─── */
+  const rows = [
+    { label: 'Total desembolsado',        p: fRf(c.totalPago),             r: fRf(f.totalPago),         i: fR(inv.aport*120) },
+    { label: 'Custo em juros/taxas',      p: fRf(c.lTotal * 0.24),         r: fRf(f.juros),              i: '—' },
+    { label: 'Ativo gerado',              p: fR(c.credLivre),              r: fR(d.c.credito),           i: fR(inv.saldo10) },
+    { label: 'Patrimônio líq. mês 120',   p: fR(d.c.pat[120]),             r: fR(Math.max(d.f.pat[120],0)), i: fR(d.inv.pat[120]) },
+    { label: 'Contemplação / Acesso',     p: `Mês ${c.mesContempl}`,       r: 'Imediato',                i: inv.mCompra>0?`Mês ${inv.mCompra}`:'> 10 anos' },
+  ];
+
+  el('svCompare').innerHTML = `
+    <div class="sv-compare-title">Comparativo Direto</div>
+    <div style="display:grid;grid-template-columns:1fr repeat(3,min-content);gap:0">
+      <div></div>
+      <div style="font-size:11px;font-weight:800;color:#8b5cf6;padding:6px 12px;text-align:right;white-space:nowrap">Consórcio</div>
+      <div style="font-size:11px;font-weight:800;color:#ef4444;padding:6px 12px;text-align:right;white-space:nowrap">Financiamento</div>
+      <div style="font-size:11px;font-weight:800;color:#15803d;padding:6px 12px;text-align:right;white-space:nowrap">CDB</div>
+      ${rows.map(r => `
+        <div style="font-size:12px;color:var(--muted);font-weight:600;padding:9px 0;border-top:1px solid var(--bg);align-self:center">${r.label}</div>
+        <div style="font-size:13px;font-weight:800;color:#8b5cf6;padding:9px 12px;border-top:1px solid var(--bg);text-align:right;white-space:nowrap">${r.p}</div>
+        <div style="font-size:13px;font-weight:800;color:#ef4444;padding:9px 12px;border-top:1px solid var(--bg);text-align:right;white-space:nowrap">${r.r}</div>
+        <div style="font-size:13px;font-weight:800;color:#15803d;padding:9px 12px;border-top:1px solid var(--bg);text-align:right;white-space:nowrap">${r.i}</div>`).join('')}
+    </div>`;
+}
+
+// ── GRÁFICO ──────────────────────────────────────
+const SERIES = [
+  { key: 'consorcio',     label: 'Consórcio',    color: '#8b5cf6', lw: 3 },
+  { key: 'financiamento', label: 'Financiamento', color: '#ef4444', lw: 2.5 },
+  { key: 'investimento',  label: 'CDB',           color: '#22c55e', lw: 2.5, dash: [6,4] },
+];
+
+function buildLegend() {
+  el('legend').innerHTML = SERIES.map(s =>
+    `<div class="leg${VIS[s.key]?'':' off'}" onclick="toggleSeries('${s.key}',this)">
+      <span class="leg-dot" style="background:${s.color}"></span>${s.label}
+    </div>`
+  ).join('');
+}
+
+function toggleSeries(key, node) {
+  VIS[key] = !VIS[key];
+  node.classList.toggle('off');
+  if (CACHE) drawChart(CACHE, 1);
+}
+
+let animId = null;
+let CACHE  = null;
+let CUR    = 0;   // mês do scrubber
+let HOVER  = -1;  // mês do mouse
+
+function drawChart(d, prog) {
+  const cv = el('mainChart');
+  const dpr = window.devicePixelRatio || 1;
+  const W = cv.clientWidth, H = cv.clientHeight;
+  if (!W || !H) return;
+  cv.width = W * dpr; cv.height = H * dpr;
+  const ctx = cv.getContext('2d');
+  ctx.scale(dpr, dpr);
+
+  const P = { t:44, r:24, b:30, l:90 };
+  const cw = W - P.l - P.r, ch = H - P.t - P.b;
+  const arrs = { consorcio: d.c.pat, financiamento: d.f.pat, investimento: d.inv.pat };
+  const cur = HOVER >= 0 ? HOVER : CUR;
+
+  // escala
+  let minY = 0, maxY = 1;
+  SERIES.forEach(s => {
+    if (!VIS[s.key]) return;
+    const arr = arrs[s.key];
+    for (let t = 0; t < N; t++) { if (arr[t] < minY) minY = arr[t]; if (arr[t] > maxY) maxY = arr[t]; }
+  });
+  minY = minY < 0 ? minY * 1.15 : -maxY * 0.08;
+  maxY = maxY * 1.1;
+  const rng = maxY - minY;
+  const tx = m => P.l + (m / 120) * cw;
+  const ty = v => P.t + (1 - (v - minY) / rng) * ch;
+  const zY = Math.min(Math.max(ty(0), P.t), P.t + ch);
+
+  ctx.clearRect(0, 0, W, H);
+  ctx.fillStyle = '#fff'; ctx.fillRect(P.l, P.t, cw, ch);
+
+  // zonas positivo/negativo
+  ctx.fillStyle = 'rgba(34,197,94,.05)'; ctx.fillRect(P.l, P.t, cw, zY - P.t);
+  ctx.fillStyle = 'rgba(239,68,68,.05)'; ctx.fillRect(P.l, zY, cw, P.t + ch - zY);
+
+  // rótulos de zona
+  ctx.save(); ctx.font = 'bold 10px -apple-system,Arial';
+  ctx.fillStyle = 'rgba(34,197,94,.5)'; ctx.textAlign = 'left';
+  if (zY > P.t + 20) ctx.fillText('▲ Patrimônio positivo', P.l + 6, P.t + 16);
+  ctx.fillStyle = 'rgba(239,68,68,.5)';
+  if (zY < P.t + ch - 10) ctx.fillText('▼ Endividamento', P.l + 6, P.t + ch - 6);
+  ctx.restore();
+
+  // grid trimestral suave
+  for (let m = 3; m <= 120; m += 3) {
+    if (m % 12 === 0) continue;
+    ctx.strokeStyle = '#f8fafc'; ctx.lineWidth = 0.5; ctx.setLineDash([]);
+    ctx.beginPath(); ctx.moveTo(tx(m), P.t); ctx.lineTo(tx(m), P.t + ch); ctx.stroke();
+  }
+
+  // grid anual + rótulos x
+  ctx.font = '11px -apple-system,Arial'; ctx.textAlign = 'center'; ctx.fillStyle = '#94a3b8';
+  for (let m = 0; m <= 120; m += 12) {
+    ctx.strokeStyle = '#e2e8f0'; ctx.lineWidth = 1; ctx.setLineDash([]);
+    ctx.beginPath(); ctx.moveTo(tx(m), P.t); ctx.lineTo(tx(m), P.t + ch); ctx.stroke();
+    ctx.fillText(String(2026 + m / 12), tx(m), P.t + ch + 18);
+  }
+
+  // grid y + rótulos
+  const yStep = niceStep(rng / 5);
+  ctx.textAlign = 'right';
+  for (let v = Math.ceil(minY / yStep) * yStep; v <= maxY + yStep * 0.1; v += yStep) {
+    const y = ty(v);
+    if (y < P.t - 4 || y > P.t + ch + 4) continue;
+    const iz = Math.abs(v) < yStep * 0.01;
+    ctx.strokeStyle = iz ? '#475569' : '#e2e8f0'; ctx.lineWidth = iz ? 2 : 1; ctx.setLineDash([]);
+    ctx.beginPath(); ctx.moveTo(P.l, y); ctx.lineTo(P.l + cw, y); ctx.stroke();
+    ctx.fillStyle = iz ? '#334155' : '#94a3b8';
+    ctx.font = (iz ? 'bold ' : '') + '11px -apple-system,Arial';
+    ctx.fillText(fR(v), P.l - 6, y + 4);
+  }
+
+  // marcador de contemplação
+  const mc = d.c.mesContempl;
+  if (mc <= 120) {
+    ctx.save();
+    // pill de fundo
+    ctx.font = 'bold 10px -apple-system,Arial'; ctx.textAlign = 'center';
+    const lbl = 'Contempl. mês ' + mc;
+    const tw = ctx.measureText(lbl).width + 14;
+    ctx.fillStyle = '#8b5cf6';
+    const px = tx(mc) - tw/2, py = P.t - 30;
+    ctx.beginPath();
+    ctx.roundRect ? ctx.roundRect(px, py, tw, 18, 4) : ctx.rect(px, py, tw, 18);
+    ctx.fill();
+    ctx.strokeStyle = '#8b5cf6'; ctx.lineWidth = 1.5; ctx.setLineDash([5, 4]);
+    ctx.beginPath(); ctx.moveTo(tx(mc), P.t); ctx.lineTo(tx(mc), P.t + ch); ctx.stroke();
+    ctx.setLineDash([]); ctx.fillStyle = '#fff';
+    ctx.fillText(lbl, tx(mc), py + 13);
+    ctx.restore();
+  }
+
+  // fills com gradiente sob cada série (animados)
+  const maxT = Math.round(prog * 120);
+  SERIES.forEach(s => {
+    if (!VIS[s.key]) return;
+    const arr = arrs[s.key];
+    const grd = ctx.createLinearGradient(0, P.t, 0, P.t + ch);
+    const [r, g, b] = s.color === '#8b5cf6' ? [139,92,246] : s.color === '#ef4444' ? [239,68,68] : [34,197,94];
+    grd.addColorStop(0, `rgba(${r},${g},${b},.12)`);
+    grd.addColorStop(1, `rgba(${r},${g},${b},0)`);
+    ctx.save(); ctx.fillStyle = grd;
+    ctx.beginPath();
+    ctx.moveTo(tx(0), zY);
+    for (let t = 0; t <= maxT; t++) ctx.lineTo(tx(t), ty(arr[t]));
+    ctx.lineTo(tx(maxT), zY);
+    ctx.closePath(); ctx.fill(); ctx.restore();
+  });
+
+  // linhas das séries
+  SERIES.forEach(s => {
+    if (!VIS[s.key]) return;
+    const arr = arrs[s.key];
+    ctx.save(); ctx.strokeStyle = s.color; ctx.lineWidth = s.lw;
+    ctx.setLineDash(s.dash || []); ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+    ctx.beginPath();
+    for (let t = 0; t <= maxT; t++) t === 0 ? ctx.moveTo(tx(t), ty(arr[t])) : ctx.lineTo(tx(t), ty(arr[t]));
+    ctx.stroke(); ctx.restore();
+  });
+
+  // cursor + dots + tooltip (scrubber ou hover)
+  if (prog >= 1 && cur >= 0) {
+    const xCur = tx(cur);
+    ctx.save(); ctx.strokeStyle = '#334155'; ctx.lineWidth = 1.5; ctx.setLineDash([]);
+    ctx.globalAlpha = 0.6;
+    ctx.beginPath(); ctx.moveTo(xCur, P.t); ctx.lineTo(xCur, P.t + ch); ctx.stroke();
+    ctx.globalAlpha = 1;
+
+    const tips = [];
+    SERIES.forEach(s => {
+      if (!VIS[s.key]) return;
+      const v = arrs[s.key][cur];
+      const yDot = ty(v);
+      ctx.beginPath(); ctx.arc(xCur, yDot, 5, 0, Math.PI * 2);
+      ctx.fillStyle = s.color; ctx.fill();
+      ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.stroke();
+      tips.push({ color: s.color, label: s.label, value: v });
+    });
+    ctx.restore();
+
+    // tooltip
+    if (tips.length) {
+      const BW = 195, LH = 19, PX = 12, PY = 8, TH = 22;
+      const BH = TH + tips.length * LH + PY * 2;
+      let bx = xCur + 14; if (bx + BW > W - P.r - 4) bx = xCur - BW - 14;
+      const by = P.t + 4;
+      ctx.save();
+      ctx.shadowColor = 'rgba(0,0,0,.12)'; ctx.shadowBlur = 12; ctx.shadowOffsetY = 4;
+      ctx.fillStyle = '#fff'; ctx.strokeStyle = '#e2e8f0'; ctx.lineWidth = 1;
+      ctx.beginPath();
+      if (ctx.roundRect) ctx.roundRect(bx, by, BW, BH, 10); else ctx.rect(bx, by, BW, BH);
+      ctx.fill(); ctx.shadowBlur = 0; ctx.shadowOffsetY = 0; ctx.stroke();
+      ctx.fillStyle = '#1e293b'; ctx.font = 'bold 12px -apple-system,Arial';
+      ctx.textAlign = 'left';
+      ctx.fillText(mLbl(cur), bx + PX, by + PY + 14);
+      tips.forEach((t, i) => {
+        const ly = by + PY + TH + i * LH + 13;
+        ctx.beginPath(); ctx.arc(bx + PX + 4, ly - 4, 4, 0, Math.PI * 2);
+        ctx.fillStyle = t.color; ctx.fill();
+        ctx.fillStyle = '#475569'; ctx.font = '11px -apple-system,Arial';
+        ctx.textAlign = 'left'; ctx.fillText(t.label, bx + PX + 13, ly);
+        ctx.fillStyle = t.value < 0 ? '#dc2626' : '#1e293b';
+        ctx.font = 'bold 11px -apple-system,Arial'; ctx.textAlign = 'right';
+        ctx.fillText(fR(t.value), bx + BW - PX, ly);
+      });
+      ctx.restore();
+    }
+  }
+}
+
+function animChart(d, dur) {
+  const t0 = performance.now();
+  if (animId) cancelAnimationFrame(animId);
+  function f(now) { const p = Math.min(1, (now - t0) / dur); drawChart(d, p); if (p < 1) animId = requestAnimationFrame(f); }
+  animId = requestAnimationFrame(f);
+}
+
+// mLbl disponível globalmente
+const MESES_CURTOS = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+function mLbl(m) {
+  const d = new Date(2026, 3 + m, 1);
+  return MESES_CURTOS[d.getMonth()] + '/' + String(d.getFullYear()).slice(2);
+}
+function mLblLong(m) {
+  const LONG = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+  const d = new Date(2026, 3 + m, 1);
+  return LONG[d.getMonth()] + ' de ' + d.getFullYear();
+}
+
+function jumpTo(m) {
+  CUR = Math.max(0, Math.min(120, m));
+  const scr = el('scrubber');
+  scr.value = CUR;
+  scr.style.setProperty('--fill', (CUR / 120 * 100).toFixed(1) + '%');
+  el('scrMonth').textContent = CUR === 0 ? 'Hoje · Abril 2026' : mLblLong(CUR);
+  el('scrBadge').textContent = CUR === 0 ? 'Mês 0' : 'Mês ' + CUR;
+  if (CACHE) { drawChart(CACHE, 1); updatePatCards(CACHE, CUR); }
+  renderEvents(CACHE.c);
+}
+
+function buildYearRuler() {
+  const r = el('yrRuler'); r.innerHTML = '';
+  for (let y = 0; y <= 10; y++) {
+    const s = document.createElement('span');
+    s.className = 'yr-tick';
+    s.textContent = String(2026 + y);
+    s.style.left = (y / 10 * 100).toFixed(1) + '%';
+    r.appendChild(s);
+  }
+}
+
+function renderEvents(c) {
+  const evs = [
+    { title: 'Hoje',     sub: 'Início',                m: 0 },
+    { title: 'Contempl.', sub: 'Consórcio contemplado', m: c.mesContempl },
+    { title: 'Quitação', sub: 'Consórcio quitado',     m: Math.min(MESES_C, 120) },
+    { title: 'Fim',      sub: '10 anos completos',     m: 120 },
+  ];
+  el('evRow').innerHTML = evs.map(e => {
+    const ok = e.m >= 0 && e.m <= 120;
+    const active = ok && Math.abs(e.m - CUR) < 1;
+    return `<div class="ev-chip${!ok?' dim':''}${active?' active':''}" onclick="jumpTo(${e.m})">
+      <span class="ev-et">${e.title}</span>
+      <span class="ev-ed">${ok ? mLbl(e.m) : '> 10 anos'}</span>
+      <span class="ev-es">${e.sub}</span>
+    </div>`;
+  }).join('');
+}
+
+function updatePatCards(d, t) {
+  const p = getParams();
+  const rI = Math.pow(1.05, 1/12) - 1;
+  const imovVal = p.credito * Math.pow(1 + rI, t);
+
+  // consórcio
+  const cPat = d.c.pat[t];
+  const cOk = t >= d.c.mesContempl;
+  const cPaid = cOk
+    ? d.c.mesContempl * d.c.parcela + d.c.lTotal + Math.max(0, t - d.c.mesContempl) * d.c.novaP
+    : t * d.c.parcela;
+  const cDebt = cOk ? Math.max(0, d.c.sPos - (t - d.c.mesContempl) * d.c.novaP) : 0;
+
+  // financiamento
+  const fPat = d.f.pat[t];
+  const fPaid = d.f.ent + Math.min(t, d.f.PF) * d.f.pmt;
+  const rM = Math.pow(1 + MKT.taxaFin / 100, 1/12) - 1;
+  let fDebt = d.f.fin;
+  for (let i = 0; i < Math.min(t, d.f.PF); i++) fDebt = Math.max(0, fDebt * (1 + rM) - d.f.pmt);
+
+  // investimento
+  const invPat = d.inv.pat[t];
+  const invPaid = t * d.inv.aport;
+  const invRend = invPat - invPaid;
+  const invOk = invPat >= p.credito;
+
+  el('patGrid').innerHTML = `
+    <div class="pat-card c-purple">
+      <div class="pc-name">Consórcio · ${mLbl(t)}</div>
+      <div class="pc-val ${cPat >= 0 ? 'pos' : 'neg'}">${fR(cPat)}</div>
+      <div class="pc-status ${cOk ? 'ok' : 'wait'}">${cOk ? 'Contemplado ✓' : 'Aguardando contemplação'}</div>
+      <div class="pc-row"><span class="pc-rl">Pago até aqui</span><span class="pc-rv">${fRf(cPaid)}</span></div>
+      ${cOk
+        ? `<div class="pc-row"><span class="pc-rl">Saldo devedor</span><span class="pc-rv" style="color:${cDebt>0?'#b91c1c':'#15803d'}">${fRf(cDebt)}</span></div>`
+        : `<div class="pc-row"><span class="pc-rl">Imóvel vale</span><span class="pc-rv">${fR(imovVal)}</span></div>`}
+    </div>
+    <div class="pat-card c-red">
+      <div class="pc-name">Financiamento · ${mLbl(t)}</div>
+      <div class="pc-val pos">${fR(fPat)}</div>
+      <div class="pc-status ok">Imóvel adquirido ✓</div>
+      <div class="pc-row"><span class="pc-rl">Pago até aqui</span><span class="pc-rv">${fRf(fPaid)}</span></div>
+      <div class="pc-row"><span class="pc-rl">Saldo devedor</span><span class="pc-rv" style="color:${fDebt>0?'#b91c1c':'#15803d'}">${fRf(fDebt)}</span></div>
+    </div>
+    <div class="pat-card c-green">
+      <div class="pc-name">CDB / Tesouro · ${mLbl(t)}</div>
+      <div class="pc-val neu">${fR(invPat)}</div>
+      <div class="pc-status ${invOk ? 'ok' : 'wait'}">${invOk ? 'Pode comprar ✓' : 'Acumulando...'}</div>
+      <div class="pc-row"><span class="pc-rl">Investido</span><span class="pc-rv">${fRf(invPaid)}</span></div>
+      <div class="pc-row"><span class="pc-rl">Rendimento</span><span class="pc-rv" style="color:#15803d">${fR(invRend)}</span></div>
+    </div>
+  `;
+}
+
+// ── BANNER ───────────────────────────────────────
+function renderBanner() {
+  const b = el('simBanner');
+  if (!SIM) {
+    b.innerHTML = `<div class="banner empty">
+      <span class="bn-icon">⚠️</span>
+      <div>
+        <div class="bn-title">Nenhuma simulação carregada — usando valores padrão</div>
+        <div class="bn-params">Crédito: R$ 600k · Grupo 4003 · Parcela 70% · Contempl. mês 36 &nbsp;·&nbsp;
+          <a href="#" onclick="event.preventDefault();window.parent.navigate&&window.parent.navigate('simulador',window.parent.document.querySelector('[data-page=simulador]'))">Ir ao Simulador →</a></div>
+      </div>
+    </div>`;
+    return;
+  }
+  const p = getParams();
+  const info = [
+    'Crédito: ' + fR(p.credito),
+    'Grupo ' + p.grupo,
+    'Parcela ' + Math.round(p.perc * 100) + '%',
+    'Lance emb. ' + p.embPerc + '%',
+    'Contempl. mês ' + p.mesContempl,
+  ].join(' · ');
+  b.innerHTML = `<div class="banner loaded">
+    <span class="bn-icon">📊</span>
+    <div>
+      <div class="bn-title">Simulação carregada</div>
+      <div class="bn-params">${info}</div>
+    </div>
+  </div>`;
+}
+
+// ── MODAL EDITAR SIMULAÇÃO ────────────────────────
+let _medPerc = 0.7;
+let _medGrupo = '4003';
+const GRUPO_LANCE = { '4003': 27.3, '4004': 30.9 };
+
+function openEditModal() {
+  const p = getParams();
+  el('med_credito').value = p.credito;
+  el('medv_credito').value = fR(p.credito);
+  el('med_mes').value = p.mesContempl;
+  el('medv_mes').value = 'Mês ' + p.mesContempl;
+  el('med_emb').value = p.embPerc;
+  el('medv_emb').value = p.embPerc + '%';
+  _medPerc = p.perc;
+  _medGrupo = p.grupo;
+  document.querySelectorAll('#med_perc .med-btn').forEach(b => {
+    const v = b.textContent.startsWith('50') ? 0.5 : b.textContent.startsWith('70') ? 0.7 : 1.0;
+    b.classList.toggle('on', v === _medPerc);
+  });
+  document.querySelectorAll('#med_grupo .med-btn').forEach(b => {
+    b.classList.toggle('on', b.textContent.includes(_medGrupo));
+  });
+  el('editModal').classList.add('open');
+}
+
+function closeEditModal() {
+  el('editModal').classList.remove('open');
+}
+
+function medPerc(v, btn) {
+  _medPerc = v;
+  document.querySelectorAll('#med_perc .med-btn').forEach(b => b.classList.remove('on'));
+  btn.classList.add('on');
+}
+
+function medGrupo(g, btn) {
+  _medGrupo = g;
+  document.querySelectorAll('#med_grupo .med-btn').forEach(b => b.classList.remove('on'));
+  btn.classList.add('on');
+}
+
+function applyEditModal() {
+  const novoSim = {
+    credito:       +el('med_credito').value,
+    perc:          _medPerc,
+    mesContempl:   +el('med_mes').value,
+    embPerc:       +el('med_emb').value,
+    lancePropPerc: GRUPO_LANCE[_medGrupo],
+    grupo:         _medGrupo,
+  };
+  SIM = { ...(SIM || {}), ...novoSim };
+  localStorage.setItem('crm_sim_result', JSON.stringify(SIM));
+  closeEditModal();
+  renderBanner();
+  recalc();
+}
+
+el('editModal').addEventListener('click', e => { if (e.target === el('editModal')) closeEditModal(); });
+
+// ── RECALC ───────────────────────────────────────
+function recalc() {
+  const p   = getParams();
+  const c   = calcConsorcio(p);
+  const f   = calcFinanciamento(p);
+  const inv = calcInvestimento(p);
+  renderCards(c, f, inv);
+  renderEcoBar(c, f, inv);
+  CACHE = { c, f, inv };
+  renderEvents(c);
+  updatePatCards(CACHE, CUR);
+  renderSimpleView(CACHE);
+  if (CUR_VIEW === 'avancada') animChart(CACHE, 700);
+}
+
+// ── INIT ─────────────────────────────────────────
+window.addEventListener('resize', () => { if (CACHE) drawChart(CACHE, 1); });
+window.addEventListener('DOMContentLoaded', () => {
+  SIM = loadSim();
+  renderBanner();
+  buildLegend();
+  buildYearRuler();
+
+  // scrubber
+  const scr = el('scrubber');
+  scr.addEventListener('input', function() {
+    CUR = +this.value;
+    this.style.setProperty('--fill', (CUR / 120 * 100).toFixed(1) + '%');
+    el('scrMonth').textContent = CUR === 0 ? 'Hoje · Abril 2026' : mLblLong(CUR);
+    el('scrBadge').textContent = CUR === 0 ? 'Mês 0' : 'Mês ' + CUR;
+    if (CACHE) { drawChart(CACHE, 1); updatePatCards(CACHE, CUR); }
+    if (CACHE) renderEvents(CACHE.c);
+  });
+
+  // mouse no canvas
+  const cv = el('mainChart');
+  cv.addEventListener('mousemove', function(e) {
+    const rect = cv.getBoundingClientRect();
+    const P = { l: 90 };
+    const cw = cv.clientWidth - P.l - 24;
+    const x = e.clientX - rect.left;
+    HOVER = Math.round(Math.max(0, Math.min(120, (x - P.l) / cw * 120)));
+    if (CACHE) drawChart(CACHE, 1);
+  });
+  cv.addEventListener('mouseleave', () => { HOVER = -1; if (CACHE) drawChart(CACHE, 1); });
+  cv.addEventListener('click', function(e) {
+    if (HOVER >= 0) jumpTo(HOVER);
+  });
+
+  recalc();
+});
+</script>
+<script src="public/js/version.js"></script>
+<script src="public/js/app-footer.js"></script>
+</body>
+</html>

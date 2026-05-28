@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Histórico dos Grupos — Consórcio Painel</title>
+  <style>
+    :root {
+      --primary: #1a3a5c;
+      --primary-light: #2563a8;
+      --accent: #f59e0b;
+      --bg: #f0f4f8;
+      --card: #ffffff;
+      --text: #1e293b;
+      --muted: #64748b;
+      --border: #e2e8f0;
+      --maior: #ef4444;
+      --media: #f59e0b;
+      --menor: #10b981;
+      --sorteio: #3b82f6;
+      --livre: #8b5cf6;
+      --fixo: #10b981;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: Arial, sans-serif; background: var(--bg); color: var(--text); font-size: 14px; }
+
+    header {
+      background: var(--primary);
+      color: white;
+      padding: 16px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+    header h1 { font-size: 20px; font-weight: 700; }
+    header span { font-size: 12px; opacity: 0.7; }
+    nav a {
+      color: rgba(255,255,255,0.8);
+      text-decoration: none;
+      margin-left: 20px;
+      font-size: 13px;
+      padding: 6px 12px;
+      border-radius: 6px;
+      transition: background 0.2s;
+    }
+    nav a:hover, nav a.active { background: rgba(255,255,255,0.15); color: white; }
+
+    .container { max-width: 1300px; margin: 0 auto; padding: 24px 16px; }
+
+    .section-title {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--muted);
+      margin-bottom: 12px;
+      padding-bottom: 6px;
+      border-bottom: 2px solid var(--border);
+    }
+
+    .card {
+      background: var(--card);
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      padding: 20px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    }
+
+    .grupos-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      margin-bottom: 24px;
+    }
+    @media (max-width: 900px) { .grupos-grid { grid-template-columns: 1fr; } }
+
+    /* GRUPO HEADER */
+    .grupo-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+    .grupo-title {
+      font-size: 20px;
+      font-weight: 800;
+      color: var(--primary);
+    }
+    .grupo-sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+    .grupo-badges { display: flex; gap: 8px; }
+    .badge {
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+    .badge-emb  { background: #dbeafe; color: #1d4ed8; }
+    .badge-livre { background: #ede9fe; color: #6d28d9; }
+
+    /* TABELA HISTÓRICO */
+    .hist-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .hist-table th {
+      background: var(--primary);
+      color: white;
+      padding: 8px 12px;
+      text-align: center;
+      font-weight: 600;
+      font-size: 12px;
+    }
+    .hist-table th:first-child { text-align: left; }
+    .hist-table td {
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--border);
+      text-align: center;
+    }
+    .hist-table td:first-child { text-align: left; font-weight: 600; }
+    .hist-table tr.maior td { color: var(--maior); font-weight: 700; }
+    .hist-table tr.media td { color: #b45309; font-weight: 600; }
+    .hist-table tr.menor td { color: var(--menor); font-weight: 700; }
+    .hist-table tr.sorteio td { color: var(--sorteio); }
+    .hist-table tr.livre td   { color: var(--livre); }
+    .hist-table tr.fixo td    { color: var(--fixo); }
+    .hist-table tr:hover td   { background: #f8fafc; }
+
+    /* BAR CHART HORIZONTAL */
+    .bar-chart-wrap { margin-top: 16px; }
+    .bar-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+    .bar-label { width: 60px; font-size: 11px; color: var(--muted); text-align: right; flex-shrink: 0; }
+    .bar-track { flex: 1; height: 20px; background: #f1f5f9; border-radius: 4px; overflow: hidden; position: relative; }
+    .bar-fill {
+      height: 100%;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      padding-right: 6px;
+      font-size: 11px;
+      font-weight: 700;
+      color: white;
+      transition: width 0.8s ease;
+    }
+    .bar-fill.maior { background: var(--maior); }
+    .bar-fill.media { background: var(--media); }
+    .bar-fill.menor { background: var(--menor); }
+
+    /* KPI CARDS */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+      margin-top: 16px;
+    }
+    .kpi-card {
+      border-radius: 10px;
+      padding: 12px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+    .kpi-card.blue  { background: #eff6ff; border: 1px solid #bfdbfe; }
+    .kpi-card.green { background: #f0fdf4; border: 1px solid #bbf7d0; }
+    .kpi-card.red   { background: #fef2f2; border: 1px solid #fecaca; }
+    .kpi-card.purple { background: #faf5ff; border: 1px solid #e9d5ff; }
+    .kpi-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--muted); font-weight: 600; }
+    .kpi-value { font-size: 22px; font-weight: 800; }
+    .kpi-card.blue .kpi-value    { color: #1d4ed8; }
+    .kpi-card.green .kpi-value   { color: #15803d; }
+    .kpi-card.red .kpi-value     { color: #dc2626; }
+    .kpi-card.purple .kpi-value  { color: #7c3aed; }
+    .kpi-sub { font-size: 11px; color: var(--muted); }
+
+    /* LANCE RECOMENDADO */
+    .lance-rec {
+      margin-top: 16px;
+      background: linear-gradient(135deg, #1a3a5c, #2563a8);
+      border-radius: 10px;
+      padding: 16px;
+      color: white;
+    }
+    .lance-rec h4 { font-size: 13px; font-weight: 600; opacity: 0.8; margin-bottom: 8px; }
+    .lance-rec-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .lance-rec-item { background: rgba(255,255,255,0.1); border-radius: 8px; padding: 10px; }
+    .lance-rec-item .lri-label { font-size: 10px; opacity: 0.7; margin-bottom: 4px; }
+    .lance-rec-item .lri-val   { font-size: 18px; font-weight: 800; }
+    .lance-rec-item .lri-sub   { font-size: 10px; opacity: 0.6; }
+
+    /* SIMULADOR RÁPIDO */
+    .sim-rapido {
+      background: #fffbeb;
+      border: 1px solid #fde68a;
+      border-radius: 10px;
+      padding: 14px;
+      margin-top: 16px;
+    }
+    .sim-rapido h4 { font-size: 12px; font-weight: 700; color: #92400e; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .sim-rapido .sr-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+    .sim-rapido label  { font-size: 12px; color: var(--muted); width: 140px; flex-shrink: 0; }
+    .sim-rapido input  { flex: 1; padding: 7px 10px; border: 1.5px solid var(--border); border-radius: 6px; font-size: 13px; }
+    .sim-rapido .sr-result { margin-top: 10px; padding: 10px; background: white; border-radius: 8px; border: 1px solid var(--border); }
+    .sim-rapido .sr-result .rr-row { display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+    .sim-rapido .sr-result .rr-row:last-child { border: none; }
+    .sim-rapido .sr-result .rr-label { color: var(--muted); }
+    .sim-rapido .sr-result .rr-val   { font-weight: 700; }
+
+    /* CONTEMPLAÇÕES CHART */
+    .contemp-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+    .contemp-label { width: 60px; font-size: 11px; color: var(--muted); }
+    .contemp-bars { flex: 1; display: flex; gap: 4px; }
+    .contemp-bar {
+      height: 24px;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 700;
+      color: white;
+      min-width: 24px;
+      padding: 0 6px;
+    }
+    .contemp-bar.sorteio { background: var(--sorteio); }
+    .contemp-bar.livre   { background: var(--livre); }
+    .contemp-bar.fixo    { background: var(--fixo); }
+
+    footer { text-align: center; padding: 24px; color: var(--muted); font-size: 11px; border-top: 1px solid var(--border); margin-top: 40px; }
+
+    .tag-trend {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-size: 11px;
+      font-weight: 600;
+      margin-left: 6px;
+    }
+    .tag-up   { background: #fee2e2; color: #dc2626; }
+    .tag-down { background: #dcfce7; color: #16a34a; }
+  </style>
+</head>
+<body>
+<script>if (!localStorage.getItem('crm_auth')) window.location.href = 'index.html';</script>
+
+<div class="container">
+
+  <div id="pageContent"></div>
+
+</div>
+
+<footer>
+  Gênesis © 2026 — Histórico de Contemplações | Grupos 4003 / 4004
+</footer>
+
+<script>
+// =====================================================================
+// DADOS (extraídos da planilha 01-Simulador de Imóvel.xlsx)
+// =====================================================================
+const GRUPOS = {
+  '4003': {
+    nome: 'Grupo 4003',
+    tipo: 'Imóvel',
+    meses: 186,
+    lanceMaxEmbutido: 30,
+    lanceMaxLivre: 90,
+    hist: {
+      meses:  ['Set/25','Out/25','Nov/25','Dez/25','Jan/26','Fev/26'],
+      maior:  [23,    70,    72.9,  61,    75,    73],
+      media:  [23,    63.5,  65.45, 59,    66.5,  66.5],
+      menor:  [23,    57,    58,    57,    58,    60],
+      qtSorteio: [1,  1,     1,     1,     1,     1],
+      qtLivre:   [9,  4,     3,     0,     1,     1],
+      qtFixo:    [0,  0,     0,     0,     0,     0],
+    },
+    mediaLance6m: 57.325,
+    minLance6m:   52.1667,
+    lanceProprioMedio: 57.325 - 30,
+    lanceProprioMin:   52.1667 - 30,
+  },
+  '4004': {
+    nome: 'Grupo 4004',
+    tipo: 'Imóvel',
+    meses: 186,
+    lanceMaxEmbutido: 30,
+    lanceMaxLivre: 90,
+    hist: {
+      meses:  ['Set/25','Out/25','Nov/25','Dez/25','Jan/26','Fev/26'],
+      maior:  [55,    58,    66,    67.9,  71,    72],
+      media:  [53.5,  55.95, 62,    62.45, 64.5,  67],
+      menor:  [52,    53.9,  58,    57,    58,    62],
+      qtSorteio: [1,  1,     1,     1,     1,     1],
+      qtLivre:   [1,  1,     1,     1,     1,     1],
+      qtFixo:    [0,  0,     0,     0,     0,     0],
+    },
+    mediaLance6m: 60.90,
+    minLance6m:   56.82,
+    lanceProprioMedio: 60.90 - 30,
+    lanceProprioMin:   56.82 - 30,
+  }
+};
+
+const fmt = (v) => 'R$ ' + Number(v).toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2});
+const fmtP = (v, dec=2) => Number(v).toLocaleString('pt-BR', {minimumFractionDigits:dec, maximumFractionDigits:dec}) + '%';
+
+// =====================================================================
+// RENDER
+// =====================================================================
+function render() {
+  let html = '';
+
+  // INTRO
+  html += `
+    <div style="margin-bottom:24px;">
+      <h2 style="font-size:22px;font-weight:800;color:var(--primary)">Análise e Histórico por Grupo</h2>
+      <p style="color:var(--muted);font-size:13px;margin-top:4px;">
+        Últimos 6 meses de contemplações — Set/2025 a Fev/2026. Dados extraídos da planilha de controle.
+      </p>
+    </div>
+    <div class="grupos-grid">
+  `;
+
+  Object.entries(GRUPOS).forEach(([id, g]) => {
+    html += buildGrupo(id, g);
+  });
+
+  html += `</div>`;
+
+  // COMPARATIVO
+  html += buildComparativo();
+
+  document.getElementById('pageContent').innerHTML = html;
+
+  // Bind simuladores rápidos
+  Object.keys(GRUPOS).forEach(id => bindSimRapido(id));
+}
+
+function buildGrupo(id, g) {
+  const h = g.hist;
+  const n = h.meses.length;
+
+  // Tendência (último vs penúltimo)
+  const tendMedia = h.media[n-1] - h.media[n-2];
+  const tendTag = tendMedia >= 0
+    ? `<span class="tag-trend tag-up">▲ +${tendMedia.toFixed(1)}%</span>`
+    : `<span class="tag-trend tag-down">▼ ${tendMedia.toFixed(1)}%</span>`;
+
+  // Tabela
+  let tabelaHead = '<tr><th>Métrica</th>' + h.meses.map(m => `<th>${m}</th>`).join('') + '</tr>';
+  let rows = [
+    { label: '% Maior Lance', values: h.maior, cls: 'maior' },
+    { label: '% Médio Lance', values: h.media, cls: 'media' },
+    { label: '% Menor Lance', values: h.menor, cls: 'menor' },
+    { label: 'Qtd Sorteio',   values: h.qtSorteio, cls: 'sorteio', int: true },
+    { label: 'Qtd Lance Livre', values: h.qtLivre, cls: 'livre', int: true },
+    { label: 'Qtd Lance Fixo',  values: h.qtFixo,  cls: 'fixo', int: true },
+  ];
+  let tabelaRows = rows.map(r =>
+    `<tr class="${r.cls}"><td>${r.label}</td>${r.values.map(v =>
+      `<td>${r.int ? v : fmtP(v,1)}</td>`
+    ).join('')}</tr>`
+  ).join('');
+
+  // Barras do último mês
+  const ultimo = n - 1;
+  const maxBar = 90;
+  let barras = `
+    <div class="bar-chart-wrap">
+      <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">${h.meses[ultimo]} — Lances (%)</div>
+      ${['maior','media','menor'].map((tipo, i) => {
+        const vals = [h.maior, h.media, h.menor];
+        const labels = ['Maior','Média','Menor'];
+        const val = vals[i][ultimo];
+        return `
+          <div class="bar-row">
+            <div class="bar-label">${labels[i]}</div>
+            <div class="bar-track">
+              <div class="bar-fill ${tipo}" style="width:${(val/maxBar*100).toFixed(1)}%">${fmtP(val,1)}</div>
+            </div>
+          </div>
+        `;
+      }).join('')}
+    </div>
+  `;
+
+  // Contemplações por mês
+  let contempChart = `
+    <div style="margin-top:12px;">
+      <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">Contemplações por Mês</div>
+      ${h.meses.map((mes, i) => {
+        const tot = h.qtSorteio[i] + h.qtLivre[i] + h.qtFixo[i];
+        return `
+          <div class="contemp-row">
+            <div class="contemp-label">${mes}</div>
+            <div class="contemp-bars">
+              ${h.qtSorteio[i]>0 ? `<div class="contemp-bar sorteio">${h.qtSorteio[i]} Sort.</div>` : ''}
+              ${h.qtLivre[i]>0   ? `<div class="contemp-bar livre">${h.qtLivre[i]} Livre</div>` : ''}
+              ${h.qtFixo[i]>0    ? `<div class="contemp-bar fixo">${h.qtFixo[i]} Fixo</div>` : ''}
+            </div>
+            <div style="font-size:11px;color:var(--muted);width:60px;text-align:right;">${tot} total</div>
+          </div>
+        `;
+      }).join('')}
+    </div>
+  `;
+
+  return `
+    <div class="card">
+      <div class="grupo-header">
+        <div>
+          <div class="grupo-title">${g.nome} ${tendTag}</div>
+          <div class="grupo-sub">${g.tipo} · ${g.meses} meses · Fev/2026</div>
+        </div>
+        <div class="grupo-badges">
+          <span class="badge badge-emb">Emb. max: ${g.lanceMaxEmbutido}%</span>
+          <span class="badge badge-livre">Livre max: ${g.lanceMaxLivre}%</span>
+        </div>
+      </div>
+
+      <!-- TABELA -->
+      <div class="section-title">Histórico de Lances (Set/25 — Fev/26)</div>
+      <div style="overflow-x:auto">
+        <table class="hist-table">
+          <thead>${tabelaHead}</thead>
+          <tbody>${tabelaRows}</tbody>
+        </table>
+      </div>
+
+      <!-- KPIs -->
+      <div class="kpi-grid">
+        <div class="kpi-card blue">
+          <span class="kpi-label">Média Lance (6 meses)</span>
+          <span class="kpi-value">${fmtP(g.mediaLance6m,2)}</span>
+          <span class="kpi-sub">Média dos lances medianos</span>
+        </div>
+        <div class="kpi-card green">
+          <span class="kpi-label">Mínimo Lance (6 meses)</span>
+          <span class="kpi-value">${fmtP(g.minLance6m,2)}</span>
+          <span class="kpi-sub">Média dos mínimos históricos</span>
+        </div>
+        <div class="kpi-card purple">
+          <span class="kpi-label">Lance Próprio Médio</span>
+          <span class="kpi-value">${fmtP(g.lanceProprioMedio,2)}</span>
+          <span class="kpi-sub">Após deduzir 30% embutido</span>
+        </div>
+        <div class="kpi-card red">
+          <span class="kpi-label">Lance Próprio Mínimo</span>
+          <span class="kpi-value">${fmtP(g.lanceProprioMin,2)}</span>
+          <span class="kpi-sub">Para maior chance de contemplar</span>
+        </div>
+      </div>
+
+      <!-- LANCE RECOMENDADO -->
+      <div class="lance-rec">
+        <h4>Lance Recomendado para Contemplação</h4>
+        <div class="lance-rec-grid">
+          <div class="lance-rec-item">
+            <div class="lri-label">Lance Total (médio)</div>
+            <div class="lri-val">${fmtP(g.mediaLance6m,1)}</div>
+            <div class="lri-sub">Embutido ${g.lanceMaxEmbutido}% + Próprio ${fmtP(g.lanceProprioMedio,1)}</div>
+          </div>
+          <div class="lance-rec-item">
+            <div class="lri-label">Lance Total (mínimo)</div>
+            <div class="lri-val">${fmtP(g.minLance6m,1)}</div>
+            <div class="lri-sub">Embutido ${g.lanceMaxEmbutido}% + Próprio ${fmtP(g.lanceProprioMin,1)}</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- BARRAS -->
+      ${barras}
+
+      <!-- CONTEMPLAÇÕES -->
+      ${contempChart}
+
+      <!-- SIMULADOR RÁPIDO -->
+      <div class="sim-rapido">
+        <h4>Simulador Rápido de Lance — ${g.nome}</h4>
+        <div class="sr-row">
+          <label>Valor do Crédito (R$)</label>
+          <input type="number" id="sr_credito_${id}" value="600000" step="10000" oninput="calcSimRapido('${id}')" />
+        </div>
+        <div class="sr-row">
+          <label>% Lance Próprio</label>
+          <input type="number" id="sr_proprio_${id}" value="${g.lanceProprioMedio.toFixed(2)}" step="0.5" oninput="calcSimRapido('${id}')" />
+        </div>
+        <div class="sr-result" id="sr_result_${id}"></div>
+      </div>
+    </div>
+  `;
+}
+
+function buildComparativo() {
+  const g3 = GRUPOS['4003'];
+  const g4 = GRUPOS['4004'];
+
+  return `
+    <div class="card">
+      <div class="section-title">Comparativo Grupos 4003 vs 4004 — Fev/2026</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;margin-top:4px;">
+
+        <div style="background:#f8fafc;border-radius:10px;padding:16px;">
+          <div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:12px;">Lance Médio (últimos 6 meses)</div>
+          <div style="display:flex;gap:16px;">
+            <div style="flex:1;text-align:center;">
+              <div style="font-size:11px;color:var(--muted)">Grupo 4003</div>
+              <div style="font-size:28px;font-weight:800;color:#1d4ed8">${fmtP(g3.mediaLance6m,1)}</div>
+            </div>
+            <div style="width:1px;background:var(--border)"></div>
+            <div style="flex:1;text-align:center;">
+              <div style="font-size:11px;color:var(--muted)">Grupo 4004</div>
+              <div style="font-size:28px;font-weight:800;color:#7c3aed">${fmtP(g4.mediaLance6m,1)}</div>
+            </div>
+          </div>
+          <div style="margin-top:10px;font-size:11px;color:var(--muted);text-align:center;">
+            Diferença: <strong>${fmtP(Math.abs(g4.mediaLance6m - g3.mediaLance6m),2)}</strong>
+            — ${g4.mediaLance6m > g3.mediaLance6m ? 'Grupo 4004 exige lance maior' : 'Grupo 4003 exige lance maior'}
+          </div>
+        </div>
+
+        <div style="background:#f8fafc;border-radius:10px;padding:16px;">
+          <div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:12px;">Lance Mínimo (últimos 6 meses)</div>
+          <div style="display:flex;gap:16px;">
+            <div style="flex:1;text-align:center;">
+              <div style="font-size:11px;color:var(--muted)">Grupo 4003</div>
+              <div style="font-size:28px;font-weight:800;color:#15803d">${fmtP(g3.minLance6m,1)}</div>
+            </div>
+            <div style="width:1px;background:var(--border)"></div>
+            <div style="flex:1;text-align:center;">
+              <div style="font-size:11px;color:var(--muted)">Grupo 4004</div>
+              <div style="font-size:28px;font-weight:800;color:#b45309">${fmtP(g4.minLance6m,1)}</div>
+            </div>
+          </div>
+          <div style="margin-top:10px;font-size:11px;color:var(--muted);text-align:center;">
+            Diferença: <strong>${fmtP(Math.abs(g4.minLance6m - g3.minLance6m),2)}</strong>
+          </div>
+        </div>
+
+        <div style="background:#f8fafc;border-radius:10px;padding:16px;">
+          <div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:12px;">Total de Contemplações (6 meses)</div>
+          ${['4003','4004'].map(id => {
+            const g = GRUPOS[id];
+            const h = g.hist;
+            const totSort  = h.qtSorteio.reduce((a,b) => a+b, 0);
+            const totLivre = h.qtLivre.reduce((a,b) => a+b, 0);
+            const totFixo  = h.qtFixo.reduce((a,b) => a+b, 0);
+            const total    = totSort + totLivre + totFixo;
+            return `
+              <div style="margin-bottom:10px;">
+                <div style="font-size:12px;font-weight:700;color:var(--primary);margin-bottom:6px;">${g.nome} — ${total} contemplações</div>
+                <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                  <span style="background:#dbeafe;color:#1d4ed8;padding:3px 10px;border-radius:12px;font-size:12px;font-weight:600;">${totSort} Sorteio</span>
+                  <span style="background:#ede9fe;color:#6d28d9;padding:3px 10px;border-radius:12px;font-size:12px;font-weight:600;">${totLivre} Lance Livre</span>
+                  <span style="background:#d1fae5;color:#065f46;padding:3px 10px;border-radius:12px;font-size:12px;font-weight:600;">${totFixo} Lance Fixo</span>
+                </div>
+              </div>
+            `;
+          }).join('')}
+        </div>
+
+        <div style="background:#f8fafc;border-radius:10px;padding:16px;">
+          <div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:12px;">Tendência (Último Mês)</div>
+          ${['4003','4004'].map(id => {
+            const g = GRUPOS[id];
+            const h = g.hist;
+            const n = h.meses.length;
+            const tendMaior = h.maior[n-1] - h.maior[n-2];
+            const tendMedia = h.media[n-1] - h.media[n-2];
+            const tendMenor = h.menor[n-1] - h.menor[n-2];
+            const fmt1 = v => (v >= 0 ? '+' : '') + v.toFixed(1) + '%';
+            const cor = v => v >= 0 ? '#dc2626' : '#16a34a';
+            return `
+              <div style="margin-bottom:10px;">
+                <div style="font-size:12px;font-weight:700;color:var(--primary);margin-bottom:6px;">${g.nome} (${h.meses[n-2]} → ${h.meses[n-1]})</div>
+                <div style="font-size:12px;color:var(--muted);">
+                  Maior: <strong style="color:${cor(tendMaior)}">${fmt1(tendMaior)}</strong> |
+                  Médio: <strong style="color:${cor(tendMedia)}">${fmt1(tendMedia)}</strong> |
+                  Menor: <strong style="color:${cor(tendMenor)}">${fmt1(tendMenor)}</strong>
+                </div>
+              </div>
+            `;
+          }).join('')}
+        </div>
+
+      </div>
+    </div>
+  `;
+}
+
+// =====================================================================
+// SIMULADOR RÁPIDO
+// =====================================================================
+function bindSimRapido(id) {
+  calcSimRapido(id);
+}
+
+function calcSimRapido(id) {
+  const g       = GRUPOS[id];
+  const credito = parseFloat(document.getElementById(`sr_credito_${id}`).value) || 0;
+  const proprio = parseFloat(document.getElementById(`sr_proprio_${id}`).value) || 0;
+  const emb     = g.lanceMaxEmbutido;
+  const totalP  = emb + proprio;
+
+  const vlEmb    = credito * emb / 100;
+  const vlProp   = credito * proprio / 100;
+  const vlTotal  = vlEmb + vlProp;
+  const credLib  = credito - vlEmb;
+  const mult     = vlTotal > 0 ? (credLib / vlTotal).toFixed(2) : '--';
+
+  document.getElementById(`sr_result_${id}`).innerHTML = `
+    <div class="rr-row"><span class="rr-label">Lance Embutido (${emb}%)</span><span class="rr-val">${fmt(vlEmb)}</span></div>
+    <div class="rr-row"><span class="rr-label">Lance Próprio (${fmtP(proprio,1)})</span><span class="rr-val" style="color:#7c3aed">${fmt(vlProp)}</span></div>
+    <div class="rr-row"><span class="rr-label">Total do Lance</span><span class="rr-val">${fmt(vlTotal)} (${fmtP(totalP,1)})</span></div>
+    <div class="rr-row"><span class="rr-label">Crédito Liberado</span><span class="rr-val" style="color:#15803d">${fmt(credLib)}</span></div>
+    <div class="rr-row"><span class="rr-label">Multiplicador</span><span class="rr-val" style="color:#1d4ed8">${mult}x</span></div>
+  `;
+}
+
+// Init
+render();
+</script>
+<script src="public/js/version.js"></script>
+<script src="public/js/app-footer.js"></script>
+</body>
+</html>
