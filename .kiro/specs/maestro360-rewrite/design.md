@@ -2,23 +2,25 @@
 
 ## Overview
 
-Este documento descreve a arquitetura técnica para a reescrita completa do CRM Maestro 360 (Gênesis) — de uma aplicação vanilla HTML/CSS/JS com persistência em localStorage para uma stack moderna baseada em Next.js 14+ (App Router), TanStack Query, Auth.js e PostgreSQL.
+Este documento descreve a arquitetura técnica para a reescrita completa do CRM Maestro 360 (Gênesis) — de uma aplicação vanilla HTML/CSS/JS com persistência em localStorage para uma stack moderna baseada em React 19 + Vite + React Router v7 (SPA), TanStack Query, autenticação JWT via Express e PostgreSQL.
 
-A reescrita preserva todas as regras de negócio existentes dos 24+ módulos, habilita colaboração multi-usuário com controle de acesso baseado em papéis, e mantém integrações em tempo real (WhatsApp via Evolution API, Google Calendar/Drive/Gmail, API Credicob).
+A reescrita preserva todas as regras de negócio existentes dos 24+ módulos, habilita colaboração multi-usuário com controle de acesso baseado em papéis, e mantém integrações em tempo real (WhatsApp via Evolution API, Google Calendar/Drive/Gmail, API Credicob). A landing page permanece como site estático separado servido pelo NGINX.
 
 ### Decisões Arquiteturais Chave
 
 | Decisão | Escolha | Justificativa |
 |---------|---------|---------------|
-| Framework | Next.js 14+ App Router | RSC para SEO e performance, API Routes integradas, eliminando necessidade de servidor Express separado |
+| Framework Frontend | React 19 + Vite + React Router v7 | SPA puro, build estático, sem complexidade de SSR — ideal para CRM 100% interativo |
+| Backend | Express (server/index.js expandido) | Já existe, já tem Socket.io e WhatsApp — expandir com rotas REST de CRUD |
 | ORM | Drizzle ORM | Type-safe, SQL-first, melhor performance que Prisma para schemas existentes, suporte nativo a PostgreSQL |
-| Autenticação | Auth.js v5 (NextAuth) | Providers de credenciais + Google OAuth, sessões JWT, middleware nativo Next.js |
+| Autenticação | JWT custom (bcrypt + jsonwebtoken) no Express | Simples, já tem as dependências, sessão em sessionStorage, Google OAuth via passport |
 | Estado do Servidor | TanStack Query v5 | Cache, invalidação, mutações otimistas, retry automático |
 | Estado do Cliente | Zustand | Leve, sem boilerplate, para UI state (sidebar, modais, preferências) |
-| UI Components | Tailwind CSS + shadcn/ui | Componentes acessíveis, customizáveis, sem lock-in de biblioteca |
-| Real-time | Socket.io Client | Compatível com servidor Evolution API existente |
+| UI Components | Tailwind CSS + shadcn/ui (tema customizado Gênesis) | Componentes acessíveis, customizados com a identidade visual existente (cores #0d1f3c, #c8920a, gradientes escuros, fonte Orbitron para logo) |
+| Real-time | Socket.io Client → Express direto | Conexão direta ao servidor Express, sem proxy intermediário |
 | Validação | Zod | Schema validation compartilhada entre client e server |
 | Formulários | React Hook Form + Zod resolver | Performance, validação integrada |
+| Deploy | Build estático (Vite) → NGINX | Mesmo modelo de deploy atual, simples e leve |
 
 ## Architecture
 
@@ -26,18 +28,20 @@ A reescrita preserva todas as regras de negócio existentes dos 24+ módulos, ha
 
 ```mermaid
 graph TB
-    subgraph "Client (Browser)"
-        UI[Next.js App - React]
+    subgraph "Client (Browser - SPA)"
+        UI[React 19 SPA - Vite]
         TQ[TanStack Query Cache]
         ZS[Zustand Store]
         SIO[Socket.io Client]
+        RR[React Router v7]
     end
 
-    subgraph "Next.js Server"
-        RSC[React Server Components]
-        API[API Route Handlers]
-        AUTH[Auth.js Middleware]
-        MW[Custom Middleware - RBAC, GeoBlock]
+    subgraph "Express Server (Node.js)"
+        API[REST API Routes]
+        AUTH[JWT Auth Middleware]
+        RBAC[RBAC Middleware]
+        GEO[Geo-Block Service]
+        WPP[WhatsApp Relay - Socket.io]
     end
 
     subgraph "External Services"
@@ -49,224 +53,254 @@ graph TB
 
     UI --> TQ
     UI --> ZS
-    UI --> SIO
+    UI --> RR
+    SIO --> WPP
     TQ --> API
-    RSC --> PG
     API --> PG
     API --> AUTH
-    API --> MW
-    SIO --> EVO
-    API --> EVO
+    API --> RBAC
+    AUTH --> GEO
+    WPP --> EVO
     API --> GOOGLE
     API --> CREDICOB
 ```
 
-### Estratégia RSC vs Client Components
+### Arquitetura SPA + Express
 
-| Tipo | Uso | Exemplos |
-|------|-----|----------|
-| Server Component (RSC) | Busca inicial de dados, layouts, páginas estáticas | Dashboard shell, lista de leads (SSR), perfil de lead |
-| Client Component | Interações, estado local, event handlers, real-time | Kanban drag-and-drop, chat WhatsApp, formulários, modais |
+Toda a aplicação CRM roda como SPA no browser. O Express serve como backend unificado:
+- **REST API** para CRUD de todas as entidades (leads, simulações, propostas, etc.)
+- **Socket.io** para WhatsApp real-time (já existente, expandido)
+- **Auth** com JWT (bcrypt + jsonwebtoken, já nas dependências)
+- **Middleware** para RBAC e geo-blocking
 
-**Regra geral**: Páginas iniciam como RSC e delegam interatividade para client components via `"use client"`.
+O build do Vite gera arquivos estáticos que o NGINX serve diretamente. O NGINX faz proxy de `/api/*` para o Express.
 
 ### Arquitetura do WhatsApp Real-Time
 
 ```mermaid
 sequenceDiagram
     participant Browser
-    participant NextAPI as Next.js API
-    participant WPPServer as WPP Relay Server
+    participant Express as Express Server
     participant Evolution as Evolution API
     participant WhatsApp
 
-    Browser->>NextAPI: Socket.io connect
-    NextAPI->>WPPServer: Proxy WebSocket
+    Browser->>Express: Socket.io connect (direto)
     WhatsApp->>Evolution: Nova mensagem
-    Evolution->>WPPServer: Webhook POST
-    WPPServer->>NextAPI: Socket.io emit 'wpp:message'
-    NextAPI->>Browser: Socket.io emit 'wpp:message'
-    Browser->>NextAPI: POST /api/wpp/send/text
-    NextAPI->>WPPServer: Forward request
-    WPPServer->>Evolution: sendText API call
+    Evolution->>Express: Webhook POST /webhook
+    Express->>Browser: Socket.io emit 'wpp:message'
+    Browser->>Express: POST /api/wpp/send/text
+    Express->>Evolution: sendText API call
     Evolution->>WhatsApp: Envia mensagem
 ```
 
-**Decisão**: O servidor WhatsApp (Express + Socket.io) permanece como serviço separado. O Next.js atua como proxy para as rotas WhatsApp e repassa eventos Socket.io ao browser. Isso mantém a separação de responsabilidades e permite escalar o serviço WhatsApp independentemente.
+**Decisão**: O servidor Express unifica API REST + Socket.io + WhatsApp relay em um único processo Node.js. O browser conecta diretamente via Socket.io sem proxy intermediário.
 
 ## Components and Interfaces
 
 ### Estrutura de Diretórios
 
 ```
-maestro360-next/
-├── src/
-│   ├── app/                          # Next.js App Router
-│   │   ├── (auth)/                   # Grupo de rotas autenticadas
-│   │   │   ├── layout.tsx            # Shell com sidebar + header
-│   │   │   ├── dashboard/page.tsx
+maestro360/
+├── client/                           # React SPA (Vite)
+│   ├── src/
+│   │   ├── main.tsx                  # Entry point
+│   │   ├── App.tsx                   # Root component + providers
+│   │   ├── router.tsx                # React Router v7 config
+│   │   ├── pages/                    # Route pages
+│   │   │   ├── login.tsx
+│   │   │   ├── dashboard.tsx
 │   │   │   ├── leads/
-│   │   │   │   ├── page.tsx          # Lista de leads
-│   │   │   │   └── [id]/page.tsx     # Perfil do lead
-│   │   │   ├── funil/page.tsx        # Kanban
-│   │   │   ├── simulador/page.tsx    # Wizard 6 etapas
-│   │   │   ├── comparativo/page.tsx
-│   │   │   ├── historico/page.tsx
-│   │   │   ├── agenda/page.tsx
-│   │   │   ├── metas/page.tsx
-│   │   │   ├── chat/page.tsx         # WhatsApp
-│   │   │   ├── email/page.tsx
-│   │   │   ├── cotas/page.tsx
-│   │   │   ├── cotas-disponiveis/page.tsx
-│   │   │   ├── propostas/page.tsx
-│   │   │   ├── contratos/page.tsx
-│   │   │   ├── parcelas/page.tsx
-│   │   │   ├── assembleias/page.tsx
-│   │   │   ├── contemplados/page.tsx
-│   │   │   ├── campanhas/page.tsx
-│   │   │   ├── equipe/page.tsx
-│   │   │   ├── configuracoes/page.tsx
-│   │   │   ├── logs/page.tsx
-│   │   │   └── notificacoes/page.tsx
-│   │   ├── (public)/                 # Rotas públicas
-│   │   │   └── login/page.tsx
-│   │   ├── api/                      # API Route Handlers
-│   │   │   ├── auth/[...nextauth]/route.ts
-│   │   │   ├── leads/route.ts
-│   │   │   ├── leads/[id]/route.ts
-│   │   │   ├── funil/route.ts
-│   │   │   ├── simulacoes/route.ts
-│   │   │   ├── propostas/route.ts
-│   │   │   ├── contratos/route.ts
-│   │   │   ├── reunioes/route.ts
-│   │   │   ├── cotas/route.ts
-│   │   │   ├── metas/route.ts
-│   │   │   ├── notificacoes/route.ts
-│   │   │   ├── configuracoes/route.ts
-│   │   │   ├── equipe/route.ts
-│   │   │   ├── campanhas/route.ts
-│   │   │   ├── audit/route.ts
-│   │   │   ├── busca/route.ts
-│   │   │   ├── wpp/[...path]/route.ts   # Proxy para WPP server
-│   │   │   ├── google/route.ts
-│   │   │   └── credicob/route.ts
-│   │   ├── layout.tsx                # Root layout
-│   │   └── globals.css
-│   ├── components/
-│   │   ├── ui/                       # shadcn/ui components
-│   │   ├── layout/
-│   │   │   ├── sidebar.tsx
-│   │   │   ├── header.tsx
-│   │   │   ├── mobile-nav.tsx
-│   │   │   └── breadcrumb.tsx
-│   │   ├── leads/
-│   │   ├── funil/
-│   │   ├── simulador/
-│   │   ├── chat/
-│   │   ├── agenda/
-│   │   ├── dashboard/
-│   │   └── shared/
-│   │       ├── data-table.tsx
-│   │       ├── empty-state.tsx
-│   │       ├── kpi-card.tsx
-│   │       └── search-global.tsx
-│   ├── lib/
-│   │   ├── db/
-│   │   │   ├── index.ts              # Drizzle client singleton
-│   │   │   ├── schema.ts             # Drizzle schema (gerado do SQL)
-│   │   │   └── migrations/
-│   │   ├── auth/
-│   │   │   ├── config.ts             # Auth.js configuration
-│   │   │   ├── geo-block.ts          # Geo-blocking logic
-│   │   │   └── rbac.ts               # Role-based access control
-│   │   ├── validators/               # Zod schemas
-│   │   │   ├── lead.ts
-│   │   │   ├── simulacao.ts
-│   │   │   ├── proposta.ts
-│   │   │   ├── reuniao.ts
-│   │   │   └── auth.ts
-│   │   ├── utils/
-│   │   │   ├── format.ts             # Formatação R$, datas, telefone
-│   │   │   ├── sequential-code.ts    # Geração CLI-XXXX, COT-XXXX, CTR-XXXX
-│   │   │   └── calculations.ts       # Cálculos comparativo/simulador
-│   │   └── api/
-│   │       ├── client.ts             # Fetch wrapper com auth
-│   │       └── error.ts              # Error handling padronizado
-│   ├── hooks/
-│   │   ├── use-leads.ts              # TanStack Query hooks para leads
-│   │   ├── use-funil.ts
-│   │   ├── use-simulacoes.ts
-│   │   ├── use-reunioes.ts
-│   │   ├── use-chat.ts
-│   │   ├── use-notificacoes.ts
-│   │   └── use-socket.ts            # Socket.io connection hook
-│   ├── stores/
-│   │   ├── sidebar-store.ts          # Estado da sidebar
-│   │   ├── chat-store.ts             # Chat UI state
-│   │   └── ui-store.ts               # Modais, toasts, preferências
-│   └── types/
-│       ├── lead.ts
-│       ├── funil.ts
-│       ├── simulacao.ts
-│       ├── auth.ts
-│       └── index.ts
-├── drizzle.config.ts
-├── next.config.ts
-├── tailwind.config.ts
-├── package.json
-└── tsconfig.json
+│   │   │   │   ├── index.tsx         # Lista de leads
+│   │   │   │   └── [id].tsx          # Perfil do lead
+│   │   │   ├── funil.tsx             # Kanban
+│   │   │   ├── simulador.tsx         # Wizard 6 etapas
+│   │   │   ├── comparativo.tsx
+│   │   │   ├── historico.tsx
+│   │   │   ├── agenda.tsx
+│   │   │   ├── metas.tsx
+│   │   │   ├── chat.tsx              # WhatsApp
+│   │   │   ├── email.tsx
+│   │   │   ├── cotas.tsx
+│   │   │   ├── cotas-disponiveis.tsx
+│   │   │   ├── propostas.tsx
+│   │   │   ├── contratos.tsx
+│   │   │   ├── parcelas.tsx
+│   │   │   ├── assembleias.tsx
+│   │   │   ├── contemplados.tsx
+│   │   │   ├── campanhas.tsx
+│   │   │   ├── equipe.tsx
+│   │   │   ├── configuracoes.tsx
+│   │   │   ├── logs.tsx
+│   │   │   └── notificacoes.tsx
+│   │   ├── components/
+│   │   │   ├── ui/                   # shadcn/ui components
+│   │   │   ├── layout/
+│   │   │   │   ├── app-shell.tsx     # Sidebar + header + main
+│   │   │   │   ├── sidebar.tsx
+│   │   │   │   ├── header.tsx
+│   │   │   │   ├── mobile-nav.tsx
+│   │   │   │   └── breadcrumb.tsx
+│   │   │   ├── leads/
+│   │   │   ├── funil/
+│   │   │   ├── simulador/
+│   │   │   ├── chat/
+│   │   │   ├── agenda/
+│   │   │   ├── dashboard/
+│   │   │   └── shared/
+│   │   │       ├── data-table.tsx
+│   │   │       ├── empty-state.tsx
+│   │   │       ├── kpi-card.tsx
+│   │   │       └── search-global.tsx
+│   │   ├── hooks/
+│   │   │   ├── use-leads.ts          # TanStack Query hooks
+│   │   │   ├── use-funil.ts
+│   │   │   ├── use-simulacoes.ts
+│   │   │   ├── use-reunioes.ts
+│   │   │   ├── use-chat.ts
+│   │   │   ├── use-notificacoes.ts
+│   │   │   ├── use-socket.ts         # Socket.io connection
+│   │   │   └── use-session-monitor.ts
+│   │   ├── stores/
+│   │   │   ├── auth-store.ts         # JWT token, user info
+│   │   │   ├── sidebar-store.ts
+│   │   │   ├── chat-store.ts
+│   │   │   └── ui-store.ts
+│   │   ├── lib/
+│   │   │   ├── api.ts                # Fetch wrapper com JWT header
+│   │   │   ├── validators/           # Zod schemas (compartilhados)
+│   │   │   │   ├── lead.ts
+│   │   │   │   ├── simulacao.ts
+│   │   │   │   ├── proposta.ts
+│   │   │   │   ├── reuniao.ts
+│   │   │   │   └── auth.ts
+│   │   │   └── utils/
+│   │   │       ├── format.ts         # Formatação R$, datas, telefone
+│   │   │       └── calculations.ts   # Cálculos comparativo/simulador
+│   │   └── types/
+│   │       ├── lead.ts
+│   │       ├── funil.ts
+│   │       ├── simulacao.ts
+│   │       ├── auth.ts
+│   │       └── index.ts
+│   ├── index.html
+│   ├── vite.config.ts
+│   ├── tailwind.config.ts
+│   ├── tsconfig.json
+│   └── package.json
+│
+├── server/                           # Express Backend (expandido)
+│   ├── index.js                      # Entry point (existente, expandido)
+│   ├── db.js                         # Drizzle client
+│   ├── evolution.js                  # WhatsApp relay (existente)
+│   ├── package.json
+│   ├── database/
+│   │   ├── schema.sql                # PostgreSQL schema (existente)
+│   │   ├── schema.ts                 # Drizzle schema
+│   │   ├── relations.ts              # Drizzle relations
+│   │   └── migrate.js
+│   ├── middleware/
+│   │   ├── auth.js                   # JWT verification
+│   │   ├── rbac.js                   # Role-based access control
+│   │   └── geoBlock.js              # Geo-blocking (existente, expandido)
+│   ├── routes/
+│   │   ├── auth.js                   # Login, logout, me (existente, expandido)
+│   │   ├── leads.js                  # CRUD leads
+│   │   ├── funil.js                  # Funis e estágios (existente, expandido)
+│   │   ├── simulacoes.js             # CRUD simulações
+│   │   ├── propostas.js              # CRUD propostas
+│   │   ├── contratos.js              # CRUD contratos
+│   │   ├── reunioes.js               # CRUD reuniões
+│   │   ├── cotas.js                  # CRUD cotas
+│   │   ├── metas.js                  # CRUD metas
+│   │   ├── notificacoes.js           # CRUD notificações
+│   │   ├── configuracoes.js          # CRUD configurações
+│   │   ├── equipe.js                 # CRUD equipe
+│   │   ├── campanhas.js              # CRUD campanhas
+│   │   ├── audit.js                  # Logs de auditoria
+│   │   ├── busca.js                  # Busca global
+│   │   ├── google.js                 # Google APIs proxy
+│   │   └── credicob.js              # Credicob API proxy
+│   └── lib/
+│       ├── sequential-code.js        # Geração CLI-XXXX, COT-XXXX, CTR-XXXX
+│       ├── geo-block.js              # Validação geográfica
+│       └── audit-log.js              # Registro de auditoria
+│
+├── public/                           # Landing page (estática, servida pelo NGINX)
+│   ├── index.html
+│   ├── landing.html
+│   └── img/
+│
+└── .deploy/
+    └── nginx.conf                    # NGINX: / → landing, /app → SPA, /api → Express
 ```
 
 ### Interfaces Principais
 
-#### Auth.js Configuration
+#### Auth — JWT Custom (Express)
 
 ```typescript
-// src/lib/auth/config.ts
-import NextAuth from "next-auth";
-import Credentials from "next-auth/providers/credentials";
-import Google from "next-auth/providers/google";
-import { db } from "@/lib/db";
-import bcrypt from "bcryptjs";
+// server/middleware/auth.js
+const jwt = require("jsonwebtoken");
 
-export const { handlers, auth, signIn, signOut } = NextAuth({
-  providers: [
-    Credentials({
-      credentials: {
-        email: { type: "email" },
-        senha: { type: "password" },
-        lat: { type: "text" },
-        lon: { type: "text" },
-      },
-      async authorize(credentials) {
-        // 1. Geo-block validation
-        // 2. Rate limiting (5 tentativas / 15 min)
-        // 3. Busca usuário + bcrypt compare
-        // 4. Audit log
-        // Retorna user object ou null
-      },
-    }),
-    Google({
-      clientId: process.env.GOOGLE_CLIENT_ID,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-      authorization: {
-        params: {
-          scope: "openid email profile https://www.googleapis.com/auth/calendar https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/gmail.modify https://www.googleapis.com/auth/gmail.send",
-          access_type: "offline",
-          prompt: "consent",
-        },
-      },
-    }),
-  ],
-  session: {
-    strategy: "jwt",
-    maxAge: 8 * 60 * 60, // 8 horas
-  },
-  callbacks: {
-    jwt({ token, user }) { /* Inclui papel, id no token */ },
-    session({ session, token }) { /* Expõe papel, id na session */ },
-  },
+const JWT_SECRET = process.env.JWT_SECRET || "genesis-dev-secret";
+const JWT_EXPIRES = "8h";
+
+function requireAuth(req, res, next) {
+  const token = req.headers.authorization?.replace("Bearer ", "");
+  if (!token) return res.status(401).json({ error: { code: "UNAUTHORIZED", message: "Token não fornecido" } });
+  
+  try {
+    const payload = jwt.verify(token, JWT_SECRET);
+    req.user = payload; // { id, email, nome, papel }
+    next();
+  } catch (err) {
+    return res.status(401).json({ error: { code: "TOKEN_EXPIRED", message: "Sessão expirada" } });
+  }
+}
+
+// server/routes/auth.js — Login endpoint
+router.post("/login", geoBlockMiddleware, async (req, res) => {
+  const { email, senha, lat, lon } = req.body;
+  // 1. Rate limiting (5 tentativas / 15 min)
+  // 2. Busca usuário + bcrypt compare
+  // 3. Geo-block validation (GPS ou IP fallback)
+  // 4. Gera JWT com { id, email, nome, papel }
+  // 5. Audit log (fire-and-forget)
+  const token = jwt.sign({ id, email, nome, papel }, JWT_SECRET, { expiresIn: JWT_EXPIRES });
+  res.json({ token, expiresIn: JWT_EXPIRES, usuario: { id, email, nome, papel } });
 });
+```
+
+#### Client Auth Store (Zustand)
+
+```typescript
+// client/src/stores/auth-store.ts
+import { create } from "zustand";
+
+interface AuthState {
+  token: string | null;
+  user: { id: number; email: string; nome: string; papel: string } | null;
+  login: (token: string, user: any) => void;
+  logout: () => void;
+  isAuthenticated: () => boolean;
+}
+
+export const useAuthStore = create<AuthState>((set, get) => ({
+  token: sessionStorage.getItem("crm_token"),
+  user: JSON.parse(sessionStorage.getItem("crm_user") || "null"),
+  login: (token, user) => {
+    sessionStorage.setItem("crm_token", token);
+    sessionStorage.setItem("crm_user", JSON.stringify(user));
+    set({ token, user });
+  },
+  logout: () => {
+    sessionStorage.removeItem("crm_token");
+    sessionStorage.removeItem("crm_user");
+    set({ token: null, user: null });
+    window.location.href = "/login";
+  },
+  isAuthenticated: () => !!get().token,
+}));
 ```
 
 #### RBAC Middleware

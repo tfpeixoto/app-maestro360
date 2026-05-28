@@ -2,60 +2,67 @@
 
 ## Overview
 
-Reescrita completa do CRM Maestro 360 de vanilla HTML/JS para Next.js 14+ App Router com TypeScript, Drizzle ORM, Auth.js v5, TanStack Query v5, Zustand, Tailwind CSS + shadcn/ui, Socket.io e Vitest + fast-check. A implementação segue uma abordagem incremental: infraestrutura → componentes compartilhados → autenticação → módulos de negócio → integrações → testes.
+Reescrita completa do CRM Maestro 360 de vanilla HTML/JS para React 19 + Vite + React Router v7 (SPA) com TypeScript, Drizzle ORM no Express backend expandido, autenticação JWT custom, TanStack Query v5, Zustand, Tailwind CSS + shadcn/ui (tema Gênesis), Socket.io direto e Vitest + fast-check. A implementação segue uma abordagem incremental: infraestrutura → componentes compartilhados → autenticação → módulos de negócio → integrações → testes. A landing page permanece como HTML estático separado servido pelo NGINX.
 
 ## Tasks
 
 - [ ] 1. Project scaffolding and infrastructure
-  - [ ] 1.1 Initialize Next.js 14+ project with App Router and TypeScript
-    - Create `maestro360-next/` directory with `npx create-next-app@latest`
-    - Configure `next.config.ts`, `tsconfig.json`, `tailwind.config.ts`
-    - Install dependencies: drizzle-orm, pg, @auth/core, @tanstack/react-query, zustand, zod, react-hook-form, @hookform/resolvers, socket.io-client, bcryptjs, pino
-    - Install dev dependencies: vitest, @testing-library/react, fast-check, playwright, drizzle-kit
-    - Configure path aliases (`@/`) in tsconfig
+  - [ ] 1.1 Initialize React 19 + Vite project with TypeScript
+    - Create `client/` directory with `npm create vite@latest` (React + TypeScript template)
+    - Configure `vite.config.ts`, `tsconfig.json`, `tailwind.config.ts`
+    - Install dependencies: @tanstack/react-query, react-router-dom, zustand, zod, react-hook-form, @hookform/resolvers, socket.io-client
+    - Install dev dependencies: vitest, @testing-library/react, fast-check, playwright
+    - Configure path aliases (`@/`) in tsconfig and vite.config
+    - Install server dependencies in `server/`: drizzle-orm, pg, drizzle-kit
     - _Requirements: 1.1, 1.5, 1.6_
 
-  - [ ] 1.2 Set up Drizzle ORM schema from existing PostgreSQL schema
+  - [ ] 1.2 Set up Drizzle ORM schema in the Express server
     - Run `drizzle-kit introspect` against the existing schema.sql
-    - Create `src/lib/db/index.ts` with Drizzle client singleton (pg pool, 5s timeout)
-    - Create `src/lib/db/schema.ts` with all tables mapped from schema.sql
-    - Define relations in `src/lib/db/relations.ts` (leads → tags, notas, historico, etc.)
-    - Create `drizzle.config.ts` pointing to PostgreSQL connection
+    - Create `server/db.js` with Drizzle client singleton (pg pool, 5s timeout)
+    - Create `server/database/schema.ts` with all tables mapped from schema.sql
+    - Define relations in `server/database/relations.ts` (leads → tags, notas, historico, etc.)
+    - Create `drizzle.config.ts` in server/ pointing to PostgreSQL connection
     - _Requirements: 1.5, 1.6_
 
-  - [ ] 1.3 Configure Tailwind CSS and shadcn/ui
+  - [ ] 1.3 Configure Tailwind CSS and shadcn/ui with Gênesis theme
     - Initialize shadcn/ui with `npx shadcn-ui@latest init`
-    - Configure `globals.css` with CSS variables for theme (light/dark)
+    - Configure `globals.css` with CSS variables matching existing Gênesis identity: `--primary: #0d1f3c`, `--primary-light: #1c3a72`, `--accent: #c8920a`, `--bg: #f7f9fc`, `--border: #e8edf5`, `--muted: #7081a0`
+    - Configure Tailwind theme extending shadcn defaults with Gênesis colors, gradients (linear-gradient(145deg, #0d1f3c, #122744, #0a1628)), and dark mode palette
+    - Add Orbitron font (Google Fonts) for logo/branding elements, system-ui for body text
     - Install base shadcn components: button, input, dialog, dropdown-menu, toast, card, badge, table, tabs, separator, sheet, command, popover
+    - Customize shadcn component variants to match existing visual style (dark headers, gold accents, rounded cards with subtle shadows)
     - _Requirements: 1.7, 29.1_
 
   - [ ] 1.4 Set up Vitest and testing infrastructure
-    - Create `vitest.config.ts` with path aliases and jsdom environment
+    - Create `vitest.config.ts` in client/ with path aliases and jsdom environment
     - Create `vitest.setup.ts` with testing-library matchers
     - Install fast-check for property-based testing
     - Create `playwright.config.ts` for E2E tests
-    - Add test scripts to `package.json`
+    - Add test scripts to client/package.json and server/package.json
     - _Requirements: 1.1_
 
-  - [ ] 1.5 Create TanStack Query and Zustand providers
-    - Create `src/app/providers.tsx` with QueryClientProvider (staleTime: 30s, retry: 3)
-    - Create `src/stores/sidebar-store.ts` for sidebar state (expanded/collapsed)
-    - Create `src/stores/ui-store.ts` for modals, toasts, preferences
-    - Create `src/lib/api/client.ts` fetch wrapper with auth headers and error handling
-    - Create `src/lib/api/error.ts` with ApiError class and standardized error response
-    - _Requirements: 1.2, 28.1, 28.3_
+  - [ ] 1.5 Create TanStack Query provider, Zustand stores, and React Router
+    - Create `client/src/App.tsx` with QueryClientProvider (staleTime: 30s, retry: 3) and RouterProvider
+    - Create `client/src/router.tsx` with React Router v7 route definitions (protected + public routes)
+    - Create `client/src/stores/auth-store.ts` for JWT token and user state (sessionStorage)
+    - Create `client/src/stores/sidebar-store.ts` for sidebar state (expanded/collapsed)
+    - Create `client/src/stores/ui-store.ts` for modals, toasts, preferences
+    - Create `client/src/lib/api.ts` fetch wrapper with JWT Authorization header and error handling
+    - _Requirements: 1.2, 1.3, 28.1, 28.3_
 
 - [ ] 2. Checkpoint - Ensure project builds and tests run
   - Ensure all tests pass, ask the user if questions arise.
 
 - [ ] 3. Core shared components and layout
   - [ ] 3.1 Implement authenticated layout shell with sidebar
-    - Create `src/app/(auth)/layout.tsx` with sidebar + header + main content area
-    - Create `src/components/layout/sidebar.tsx` with collapsible navigation (7 sections)
-    - Create `src/components/layout/header.tsx` with user menu, notifications bell, global search
-    - Create `src/components/layout/mobile-nav.tsx` with drawer overlay for < 768px
-    - Create `src/components/layout/breadcrumb.tsx`
+    - Create `client/src/components/layout/app-shell.tsx` with sidebar + header + main content area
+    - Create `client/src/components/layout/sidebar.tsx` with collapsible navigation (7 sections) using Gênesis dark theme (#0d1f3c background, gold accent highlights for active items)
+    - Create `client/src/components/layout/header.tsx` with user menu, notifications bell, global search — matching existing header style (dark gradient, gold chips)
+    - Create `client/src/components/layout/mobile-nav.tsx` with drawer overlay for < 768px
+    - Create `client/src/components/layout/breadcrumb.tsx`
+    - Implement React Router Outlet for page content rendering
     - Sidebar: expanded ~200px with icons+labels, collapsed ~56px icons only, pin button
+    - Preserve existing visual identity: dark sidebar with gold accent on active items, gradient header, card-based content areas with subtle shadows
     - _Requirements: 1.7, 29.1, 29.3_
 
   - [ ] 3.2 Implement shared data-table component
@@ -77,16 +84,16 @@ Reescrita completa do CRM Maestro 360 de vanilla HTML/JS para Next.js 14+ App Ro
     - **Validates: Requirements 27.1, 27.2, 27.3, 27.4, 5.1**
 
 - [ ] 4. Authentication and RBAC
-  - [ ] 4.1 Implement Auth.js v5 configuration
-    - Create `src/lib/auth/config.ts` with Credentials + Google OAuth providers
-    - Configure JWT strategy (8h expiration), session callbacks
-    - Create `src/app/api/auth/[...nextauth]/route.ts`
-    - Implement bcrypt password verification in authorize callback
-    - Implement rate limiting (5 attempts / 15 min per email)
+  - [ ] 4.1 Implement JWT auth in Express backend
+    - Expand `server/routes/auth.js` with full login flow (already partially exists)
+    - Implement bcrypt password verification + JWT generation (8h expiration)
+    - Implement rate limiting (5 attempts / 15 min per email) using in-memory store
+    - Implement Google OAuth callback route for token exchange
+    - Create `server/middleware/auth.js` with requireAuth middleware (JWT verification)
     - _Requirements: 2.1, 2.2, 2.3, 1.3_
 
   - [ ] 4.2 Implement geo-blocking service
-    - Create `src/lib/auth/geo-block.ts` with RMBH bounding box validation
+    - Expand `server/middleware/geoBlock.js` with RMBH bounding box validation
     - Implement GPS coordinate validation (lat/lon within bounds)
     - Implement IP geolocation fallback (5s timeout, city matching)
     - Handle edge cases: GPS denied, IP service unavailable → block
@@ -108,10 +115,10 @@ Reescrita completa do CRM Maestro 360 de vanilla HTML/JS para Next.js 14+ App Ro
     - **Validates: Requirements 2.9**
 
   - [ ] 4.6 Implement RBAC middleware
-    - Create `src/lib/auth/rbac.ts` with role permissions matrix (admin, gerente, vendedor)
-    - Create `src/middleware.ts` for route protection and role checking
-    - Implement ownerOnly filtering for vendedor role
-    - Hide restricted menu items based on role in sidebar
+    - Create `server/middleware/rbac.js` with role permissions matrix (admin, gerente, vendedor)
+    - Apply RBAC middleware to all protected Express routes
+    - Implement ownerOnly filtering for vendedor role (responsavel_id check)
+    - Client-side: hide restricted menu items based on role in sidebar component
     - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7_
 
   - [ ]* 4.7 Write property test for RBAC permission enforcement
@@ -119,16 +126,19 @@ Reescrita completa do CRM Maestro 360 de vanilla HTML/JS para Next.js 14+ App Ro
     - **Validates: Requirements 3.2, 3.3, 3.4, 3.5**
 
   - [ ] 4.8 Implement session management and inactivity timeout
-    - Create `src/hooks/use-session-monitor.ts` tracking user activity events
+    - Create `client/src/hooks/use-session-monitor.ts` tracking user activity events
     - Implement 28-min warning modal with 2-min countdown
     - Implement 30-min inactivity logout (clear sessionStorage, redirect to login)
-    - JWT expiration check every 60s
+    - JWT expiration check every 60s (decode token client-side, compare exp)
     - Store token in sessionStorage only (no persistence across browser restarts)
     - _Requirements: 2.10, 2.11, 2.12, 2.13, 2.14_
 
   - [ ] 4.9 Implement login page
-    - Create `src/app/(public)/login/page.tsx` with email/password form
+    - Create `client/src/pages/login.tsx` with email/password form
+    - Replicate existing Gênesis login visual: dark gradient background with dot pattern, centered card with logo (Orbitron font), gold accent on focus states
     - Implement GPS permission request on submit
+    - Call POST /api/auth/login with credentials + GPS coords
+    - Store JWT in sessionStorage via auth-store on success
     - Show geo-block error messages
     - Show rate-limit countdown when blocked
     - Google OAuth login button
@@ -139,12 +149,13 @@ Reescrita completa do CRM Maestro 360 de vanilla HTML/JS para Next.js 14+ App Ro
 
 - [ ] 6. Lead management
   - [ ] 6.1 Implement Kanban board (Funil de Vendas)
-    - Create `src/app/(auth)/funil/page.tsx` with funnel selector
-    - Create `src/components/funil/kanban-board.tsx` with columns ordered by `ordem`
-    - Create `src/components/funil/kanban-card.tsx` (nome, CLI-XXXX, valor R$, badge)
+    - Create `client/src/pages/funil.tsx` with funnel selector
+    - Create `client/src/components/funil/kanban-board.tsx` with columns ordered by `ordem`
+    - Create `client/src/components/funil/kanban-card.tsx` (nome, CLI-XXXX, valor R$, badge)
     - Implement drag-and-drop with optimistic update and rollback on failure
     - Implement stage regression confirmation dialog
     - Log stage transitions in lead_historico
+    - Create `server/routes/leads.js` with GET /api/leads (list + filters) and PATCH /api/leads/:id/stage
     - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5, 4.6_
 
   - [ ]* 6.2 Write property tests for Kanban logic
@@ -154,10 +165,10 @@ Reescrita completa do CRM Maestro 360 de vanilla HTML/JS para Next.js 14+ App Ro
 
   - [ ] 6.3 Implement lead creation and validation
     - Create lead creation form (nome, telefone, email, valor, objetivo, origem, estágio)
-    - Implement Zod validation schema in `src/lib/validators/lead.ts`
-    - Generate CLI-XXXX code via PostgreSQL sequence
+    - Implement Zod validation schema in `client/src/lib/validators/lead.ts`
+    - Generate CLI-XXXX code via PostgreSQL sequence (server-side)
     - Check phone uniqueness with duplicate warning
-    - Create `src/app/api/leads/route.ts` (GET list + POST create)
+    - Create `server/routes/leads.js` POST /api/leads endpoint
     - _Requirements: 4.7, 4.8, 27.1_
 
   - [ ]* 6.4 Write property test for lead creation validation
@@ -290,10 +301,10 @@ Reescrita completa do CRM Maestro 360 de vanilla HTML/JS para Next.js 14+ App Ro
 
 - [ ] 11. WhatsApp chat integration
   - [ ] 11.1 Implement Socket.io connection and chat store
-    - Create `src/hooks/use-socket.ts` with Socket.io client connection
-    - Create `src/stores/chat-store.ts` for active chat, unread counts
+    - Create `client/src/hooks/use-socket.ts` with Socket.io client connecting directly to Express server
+    - Create `client/src/stores/chat-store.ts` for active chat, unread counts
     - Implement auto-reconnection every 15s with visual indicator
-    - Create `src/app/api/wpp/[...path]/route.ts` as proxy to WPP server
+    - No proxy needed — browser connects directly to Express Socket.io
     - _Requirements: 11.1, 11.9_
 
   - [ ] 11.2 Implement chat page UI

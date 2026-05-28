@@ -2,7 +2,7 @@
 
 ## Introduction
 
-Reescrita completa do sistema CRM Maestro 360 (Gênesis) — uma plataforma especializada em gestão de vendas de consórcios — de vanilla HTML/CSS/JS com persistência em localStorage para uma stack moderna usando Next.js, TanStack Query, Auth.js e PostgreSQL. A reescrita migra todos os 24+ módulos, preserva as regras de negócio existentes, habilita colaboração multi-usuário e mantém as integrações em tempo real (WhatsApp via Evolution API, Google Calendar/Drive/Gmail, API Credicob).
+Reescrita completa do sistema CRM Maestro 360 (Gênesis) — uma plataforma especializada em gestão de vendas de consórcios — de vanilla HTML/CSS/JS com persistência em localStorage para uma stack moderna usando React 19 + Vite + React Router v7 (SPA), TanStack Query, autenticação JWT com o backend Express existente e PostgreSQL. A landing page permanece como site estático separado (HTML existente ou futuro mini-site Astro/Next.js para SEO), servida pelo NGINX no domínio raiz. O CRM SPA é servido em subdomínio ou path dedicado (ex: app.domain.com ou domain.com/crm). A reescrita migra todos os 24+ módulos, preserva as regras de negócio existentes, habilita colaboração multi-usuário e mantém as integrações em tempo real (WhatsApp via Evolution API, Google Calendar/Drive/Gmail, API Credicob).
 
 ## Glossary
 
@@ -21,7 +21,7 @@ Reescrita completa do sistema CRM Maestro 360 (Gênesis) — uma plataforma espe
 - **Parcela**: Um pagamento mensal associado a um Contrato
 - **Evolution_API**: Serviço de integração WhatsApp de terceiros usando o protocolo Baileys
 - **API_Credicob**: API externa que fornece cotas de consórcio disponíveis para transferência
-- **Sistema_Auth**: O subsistema de autenticação e autorização usando Auth.js (NextAuth)
+- **Sistema_Auth**: O subsistema de autenticação e autorização usando JWT (bcrypt + jsonwebtoken) com o backend Express existente (server/index.js)
 - **TanStack_Query**: A biblioteca de gerenciamento de estado do servidor (React Query) usada para busca e cache de dados
 - **Sessão**: Um contexto de usuário autenticado com token JWT, expiração de 8 horas e timeout de inatividade de 30 minutos
 - **Papel**: Um nível de permissão de usuário — admin (acesso total), gerente (gestão) ou vendedor (consultor de vendas)
@@ -31,17 +31,20 @@ Reescrita completa do sistema CRM Maestro 360 (Gênesis) — uma plataforma espe
 
 ### Requisito 1: Arquitetura do Projeto e Configuração da Stack
 
-**User Story:** Como desenvolvedor, quero o projeto estruturado com Next.js, TanStack Query, Auth.js e PostgreSQL, para que todos os módulos compartilhem uma base moderna e consistente.
+**User Story:** Como desenvolvedor, quero o projeto estruturado com React 19 + Vite + React Router v7 (SPA), TanStack Query, autenticação JWT via Express e PostgreSQL, para que todos os módulos compartilhem uma base moderna e consistente.
 
 #### Acceptance Criteria
 
-1. O CRM DEVE usar Next.js (App Router) como framework da aplicação, utilizando React Server Components para busca inicial de dados e renderização de páginas, e client components para interações do usuário que requerem estado local ou event handlers do browser
+1. O CRM DEVE usar React 19 com Vite como bundler e React Router v7 para roteamento client-side, operando como Single Page Application (SPA) com build estático servido por NGINX
 2. O CRM DEVE usar TanStack_Query para todo gerenciamento de estado do servidor no client-side incluindo busca, cache e mutação de dados, com staleTime configurado em no máximo 60 segundos e retry de no máximo 3 tentativas em caso de falha de requisição
-3. O CRM DEVE usar Auth.js (NextAuth) para autenticação com provider de credenciais (email/senha com bcrypt) e provider Google OAuth, mantendo sessões com duração máxima de 24 horas antes de exigir re-autenticação
+3. O CRM DEVE usar autenticação JWT implementada no backend Express existente (server/index.js) com bcrypt para hash de senhas e jsonwebtoken para geração/validação de tokens, suportando login por credenciais (email/senha) e Google OAuth, com sessão gerenciada client-side em sessionStorage
 4. IF a conexão com o banco de dados PostgreSQL falhar durante uma requisição, THEN O CRM DEVE retornar uma indicação de erro de indisponibilidade ao usuário em no máximo 5 segundos sem expor detalhes internos da conexão
 5. O CRM DEVE conectar-se a um banco de dados PostgreSQL usando o schema existente definido em server/database/schema.sql
 6. O CRM DEVE usar um ORM ou query builder type-safe (Prisma ou Drizzle) para interagir com o banco de dados PostgreSQL
 7. O CRM DEVE implementar um layout responsivo com navegação lateral retrátil contendo as seções de menu existentes (Início, Prospecção, Ferramentas, Comercial, Grupos & Cotas, Financeiro, Administração), onde a sidebar colapsa para exibir apenas ícones em viewports com largura inferior a 768px e pode ser recolhida/expandida manualmente pelo usuário em qualquer viewport
+8. O servidor Express existente (server/index.js) DEVE ser expandido para servir como backend API completo, expondo todos os endpoints REST necessários para os módulos do CRM, substituindo qualquer necessidade de API routes de framework frontend
+9. O CRM SPA DEVE conectar-se diretamente ao servidor Express via Socket.io para comunicação em tempo real (WhatsApp, notificações), sem necessidade de proxy intermediário
+10. A landing page (index.html, landing.html) DEVE permanecer como site estático separado servido pelo NGINX no domínio raiz, independente do build do CRM SPA
 
 ### Requisito 2: Autenticação e Gerenciamento de Sessão
 
